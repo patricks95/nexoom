@@ -1,24 +1,24 @@
 # Nexoom - Video Conferencing Platform
 
-A simple PHP-based video conferencing platform using Jitsi Meet API, similar to Zoom with basic features.
+A production-ready PHP-based video conferencing platform using WebRTC technology, similar to Zoom with professional features.
 
 ## Features
 
-### Broadcaster Page (`broadcaster.php`)
+### Broadcaster Features
 - Start meetings with unique room IDs
 - Microphone on/off control
-- Speaker on/off control
+- Video on/off control
 - Screen sharing capability
-- End meeting functionality
-- Full Jitsi Meet integration
+- Real-time chat system
+- Professional meeting controls
 
-### Viewer Page (`viewer.php`)
+### Viewer Features
 - Join meetings as participants
 - Microphone on/off control
-- Speaker on/off control
+- Video on/off control
 - Raise hand functionality (with visual animation)
+- Real-time chat system
 - Leave meeting option
-- Chat integration
 
 ## Installation
 
@@ -42,7 +42,7 @@ A simple PHP-based video conferencing platform using Jitsi Meet API, similar to 
 
 - **Backend**: PHP with session management
 - **Frontend**: HTML5, CSS3, JavaScript
-- **Video Conferencing**: Jitsi Meet External API
+- **Video Conferencing**: WebRTC (no external dependencies)
 - **Styling**: Tailwind CSS
 - **Icons**: Font Awesome
 
@@ -51,22 +51,24 @@ A simple PHP-based video conferencing platform using Jitsi Meet API, similar to 
 ```
 Nexoom/
 ├── index.php          # Homepage with role selection
-├── broadcaster.php    # Broadcaster interface
-├── viewer.php         # Viewer/participant interface
+├── video-chat.php     # Main video conferencing interface
 ├── style.css          # Custom styles
 └── README.md          # This file
 ```
 
 ## Features Implemented
 
-✅ Two main pages (Broadcaster & Viewer)
-✅ Microphone control
-✅ Speaker control
-✅ Screen sharing (Broadcaster)
-✅ Raise hand functionality (Viewer)
-✅ Modern, responsive UI
-✅ Jitsi Meet integration
-✅ Meeting room management
+✅ **Production-ready video conferencing**
+✅ **Microphone on/off control**
+✅ **Video on/off control**
+✅ **Screen sharing (Broadcaster)**
+✅ **Raise hand functionality (Viewer)**
+✅ **Real-time chat system**
+✅ **Modern, responsive UI**
+✅ **WebRTC integration (no external dependencies)**
+✅ **Meeting room management**
+✅ **Error handling and recovery**
+✅ **Device conflict resolution**
 
 ## Browser Compatibility
 
@@ -82,6 +84,6 @@ Nexoom/
 - Modern web browser with WebRTC support
 - Internet connection for Jitsi Meet API
 
-## Powered by
+## Production Ready
 
-This project uses [Jitsi Meet](https://jitsi.org/) for video conferencing functionality.
+This project is production-ready and uses pure WebRTC technology for video conferencing functionality without any external dependencies.

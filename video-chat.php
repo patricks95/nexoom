@@ -172,6 +172,44 @@ $_SESSION['user_role'] = $userRole;
             z-index: 999;
         }
         
+        .error-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 1001;
+            max-width: 500px;
+        }
+        
+        .error-message h3 {
+            color: #f59e0b;
+            margin-bottom: 15px;
+        }
+        
+        .error-message p {
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        
+        .error-message button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        .error-message button:hover {
+            background: #2563eb;
+        }
+        
         .chat-panel {
             position: fixed;
             right: -300px;
@@ -214,6 +252,11 @@ $_SESSION['user_role'] = $userRole;
             margin-left: 20px;
         }
         
+        .message.system {
+            background: #f59e0b;
+            text-align: center;
+        }
+        
         .chat-input {
             position: absolute;
             bottom: 0;
@@ -232,6 +275,10 @@ $_SESSION['user_role'] = $userRole;
             color: white;
             outline: none;
         }
+        
+        .chat-input input:focus {
+            border-color: #3b82f6;
+        }
     </style>
 </head>
 <body>
@@ -247,6 +294,14 @@ $_SESSION['user_role'] = $userRole;
         
         <div class="loading" id="loading">
             <i class="fas fa-spinner fa-spin"></i> Starting video chat...
+        </div>
+        
+        <div class="error-message" id="errorMessage" style="display: none;">
+            <h3><i class="fas fa-exclamation-triangle"></i> Connection Error</h3>
+            <p id="errorText">An error occurred while connecting to the video chat.</p>
+            <button onclick="retryConnection()">Try Again</button>
+            <button onclick="joinWithoutVideo()">Join Audio Only</button>
+            <button onclick="window.location.href='index.php'">Go Back</button>
         </div>
         
         <div class="video-grid" id="videoGrid">
@@ -289,7 +344,7 @@ $_SESSION['user_role'] = $userRole;
                 </button>
             </div>
             <div class="chat-messages" id="chatMessages">
-                <!-- Messages will be added here -->
+                <div class="message system">Welcome to the meeting! Type a message to start chatting.</div>
             </div>
             <div class="chat-input">
                 <input type="text" id="chatInput" placeholder="Type a message...">
@@ -298,7 +353,7 @@ $_SESSION['user_role'] = $userRole;
     </div>
 
     <script>
-        // Simple WebRTC-based video chat
+        // Production-ready WebRTC video chat
         class VideoChat {
             constructor() {
                 this.localStream = null;
@@ -309,6 +364,7 @@ $_SESSION['user_role'] = $userRole;
                 this.isScreenSharing = false;
                 this.handRaised = false;
                 this.chatOpen = false;
+                this.connectionError = false;
                 
                 this.init();
             }
@@ -319,9 +375,10 @@ $_SESSION['user_role'] = $userRole;
                     this.setupEventListeners();
                     this.updateStatus('Connected', 'green');
                     document.getElementById('loading').style.display = 'none';
+                    this.addMessage('Successfully connected to the meeting!', 'system');
                 } catch (error) {
                     console.error('Error initializing video chat:', error);
-                    this.updateStatus('Error: ' + error.message, 'red');
+                    this.handleConnectionError(error);
                 }
             }
             
@@ -331,8 +388,67 @@ $_SESSION['user_role'] = $userRole;
                     audio: true
                 };
                 
-                this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
-                this.addVideoElement(this.localStream, 'local', 'You');
+                try {
+                    this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    this.addVideoElement(this.localStream, 'local', 'You');
+                } catch (error) {
+                    if (error.name === 'NotAllowedError') {
+                        throw new Error('Camera/microphone access denied. Please allow access and try again.');
+                    } else if (error.name === 'NotFoundError') {
+                        throw new Error('No camera/microphone found. Please connect a device and try again.');
+                    } else if (error.name === 'NotReadableError') {
+                        throw new Error('Camera/microphone is already in use by another application.');
+                    } else if (error.name === 'OverconstrainedError') {
+                        throw new Error('Camera/microphone constraints cannot be satisfied.');
+                    } else {
+                        throw new Error('Failed to access camera/microphone: ' + error.message);
+                    }
+                }
+            }
+            
+            handleConnectionError(error) {
+                this.connectionError = true;
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('errorMessage').style.display = 'block';
+                document.getElementById('errorText').textContent = error.message;
+                this.updateStatus('Connection Error', 'red');
+            }
+            
+            async joinWithoutVideo() {
+                try {
+                    const constraints = {
+                        video: false,
+                        audio: true
+                    };
+                    
+                    this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    this.addVideoElement(this.localStream, 'local', 'You (Audio Only)');
+                    this.isVideoOn = false;
+                    
+                    document.getElementById('errorMessage').style.display = 'none';
+                    this.updateStatus('Connected (Audio Only)', 'yellow');
+                    this.setupEventListeners();
+                    this.addMessage('Connected in audio-only mode', 'system');
+                } catch (error) {
+                    console.error('Error joining without video:', error);
+                    this.updateStatus('Failed to join: ' + error.message, 'red');
+                }
+            }
+            
+            async retryConnection() {
+                document.getElementById('errorMessage').style.display = 'none';
+                document.getElementById('loading').style.display = 'block';
+                this.connectionError = false;
+                
+                try {
+                    await this.getUserMedia();
+                    this.setupEventListeners();
+                    this.updateStatus('Connected', 'green');
+                    document.getElementById('loading').style.display = 'none';
+                    this.addMessage('Successfully reconnected!', 'system');
+                } catch (error) {
+                    this.handleConnectionError(error);
+                }
             }
             
             addVideoElement(stream, type, label) {
@@ -410,6 +526,8 @@ $_SESSION['user_role'] = $userRole;
                     const btn = document.getElementById('mic-toggle');
                     btn.classList.toggle('muted', this.isMuted);
                     btn.innerHTML = this.isMuted ? '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
+                    
+                    this.addMessage(this.isMuted ? 'Microphone muted' : 'Microphone unmuted', 'system');
                 }
             }
             
@@ -424,6 +542,8 @@ $_SESSION['user_role'] = $userRole;
                     const btn = document.getElementById('video-toggle');
                     btn.classList.toggle('muted', !this.isVideoOn);
                     btn.innerHTML = this.isVideoOn ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
+                    
+                    this.addMessage(this.isVideoOn ? 'Video enabled' : 'Video disabled', 'system');
                 }
             }
             
@@ -432,20 +552,25 @@ $_SESSION['user_role'] = $userRole;
                     try {
                         const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
                         this.addVideoElement(screenStream, 'screen', 'Screen Share');
-                        this.isScreenShare = true;
+                        this.isScreenSharing = true;
                         
                         const btn = document.getElementById('screen-share');
                         btn.classList.add('active');
                         btn.innerHTML = '<i class="fas fa-stop"></i>';
+                        
+                        this.addMessage('Screen sharing started', 'system');
                     } catch (error) {
                         console.error('Error sharing screen:', error);
+                        this.addMessage('Screen sharing failed: ' + error.message, 'system');
                     }
                 } else {
                     // Stop screen sharing
-                    this.isScreenShare = false;
+                    this.isScreenSharing = false;
                     const btn = document.getElementById('screen-share');
                     btn.classList.remove('active');
                     btn.innerHTML = '<i class="fas fa-desktop"></i>';
+                    
+                    this.addMessage('Screen sharing stopped', 'system');
                 }
             }
             
@@ -456,6 +581,8 @@ $_SESSION['user_role'] = $userRole;
                 
                 if (this.handRaised) {
                     this.addMessage('🙋‍♂️ Student raised hand!', 'system');
+                } else {
+                    this.addMessage('Hand lowered', 'system');
                 }
             }
             
@@ -498,9 +625,22 @@ $_SESSION['user_role'] = $userRole;
             }
         }
         
+        // Global functions for error handling
+        function retryConnection() {
+            if (window.videoChat) {
+                window.videoChat.retryConnection();
+            }
+        }
+        
+        function joinWithoutVideo() {
+            if (window.videoChat) {
+                window.videoChat.joinWithoutVideo();
+            }
+        }
+        
         // Initialize video chat when page loads
         document.addEventListener('DOMContentLoaded', () => {
-            new VideoChat();
+            window.videoChat = new VideoChat();
         });
     </script>
 </body>

@@ -33,7 +33,7 @@ session_start();
             <!-- Meeting ID Input -->
             <div class="bg-white rounded-2xl p-6 mb-8">
                 <h3 class="text-xl font-bold text-gray-800 mb-4 text-center">Join Specific Meeting</h3>
-                <form method="GET" action="video-chat-v2.php" class="flex flex-col md:flex-row gap-4">
+                <form method="GET" action="video-chat.php" class="flex flex-col md:flex-row gap-4">
                     <input type="text" name="room" placeholder="Enter Meeting ID" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     <input type="hidden" name="role" value="viewer">
                     <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300">
@@ -51,7 +51,7 @@ session_start();
                         </div>
                         <h2 class="text-2xl font-bold text-gray-800 mb-4">Broadcaster</h2>
                         <p class="text-gray-600 mb-6">Start a meeting, share your screen, and manage participants</p>
-                        <a href="video-chat-v2.php?role=broadcaster" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300 inline-block">
+                        <a href="video-chat.php?role=broadcaster" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300 inline-block">
                             Start Meeting
                         </a>
                     </div>
@@ -65,7 +65,7 @@ session_start();
                         </div>
                         <h2 class="text-2xl font-bold text-gray-800 mb-4">Viewer</h2>
                         <p class="text-gray-600 mb-6">Join a meeting as a participant and interact with others</p>
-                        <a href="video-chat-v2.php?role=viewer" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300 inline-block">
+                        <a href="video-chat.php?role=viewer" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300 inline-block">
                             Join Meeting
                         </a>
                     </div>
