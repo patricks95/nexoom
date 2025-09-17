@@ -1,5 +1,13 @@
 <?php
-session_start();
+require_once 'includes/auth.php';
+
+// Redirect to login if not logged in
+if (!isLoggedIn()) {
+    header('Location: login.php');
+    exit();
+}
+
+$user = getCurrentUser();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -27,6 +35,12 @@ session_start();
         <div class="text-center mb-12">
             <h1 class="text-5xl font-bold text-white mb-4">Nexoom</h1>
             <p class="text-xl text-white opacity-90">Professional Video Conferencing Platform</p>
+            <div class="mt-4">
+                <span class="text-white opacity-75">Welcome, <?php echo htmlspecialchars($user['full_name']); ?>!</span>
+                <a href="logout.php" class="ml-4 text-white hover:text-yellow-300 transition duration-300">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
         </div>
         
         <div class="max-w-4xl mx-auto">

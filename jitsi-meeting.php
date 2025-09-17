@@ -1,28 +1,54 @@
 <?php
-session_start();
+require_once 'includes/auth.php';
+require_once 'includes/meeting.php';
 
-// Generate a unique meeting ID
-$meetingId = isset($_GET['room']) ? $_GET['room'] : 'nexoom_' . substr(md5(uniqid()), 0, 8);
-$userRole = isset($_GET['role']) ? $_GET['role'] : 'viewer';
-
-// Store meeting info in session
-$_SESSION['meeting_id'] = $meetingId;
-$_SESSION['user_role'] = $userRole;
-
-// Simple meeting validation (in production, you'd use a database)
-$validMeetings = [
-    'nexoom_demo' => ['status' => 'active', 'created' => time()],
-    'nexoom_test' => ['status' => 'active', 'created' => time()],
-    'nexoom_live' => ['status' => 'active', 'created' => time()]
-];
-
-// Check if meeting exists or create new one
-if (!isset($validMeetings[$meetingId])) {
-    $validMeetings[$meetingId] = ['status' => 'active', 'created' => time()];
+// Redirect to login if not logged in
+if (!isLoggedIn()) {
+    header('Location: login.php');
+    exit();
 }
 
-$meetingExists = isset($validMeetings[$meetingId]);
-$isValidMeeting = $meetingExists && $validMeetings[$meetingId]['status'] === 'active';
+$user = getCurrentUser();
+$meetingId = isset($_GET['room']) ? $_GET['room'] : '';
+$userRole = $user['role'];
+
+// Validate meeting ID
+if (empty($meetingId)) {
+    header('Location: index.php');
+    exit();
+}
+
+// Get meeting details from database
+$meeting = $meeting->getMeeting($meetingId);
+$isValidMeeting = $meeting !== false;
+
+// If meeting doesn't exist, create it (for broadcasters)
+if (!$isValidMeeting && $userRole === 'broadcaster') {
+    $result = $meeting->createMeeting(
+        $meetingId,
+        'Meeting ' . $meetingId,
+        'Meeting created by ' . $user['full_name'],
+        $user['id'],
+        'public',
+        100,
+        null
+    );
+    
+    if ($result['success']) {
+        $meeting = $meeting->getMeeting($meetingId);
+        $isValidMeeting = true;
+    }
+}
+
+// Join meeting if valid
+if ($isValidMeeting) {
+    $joinResult = $meeting->joinMeeting($meetingId, $user['id'], $userRole === 'broadcaster' ? 'host' : 'participant');
+    if (!$joinResult['success']) {
+        $error_message = $joinResult['message'];
+    }
+} else {
+    $error_message = 'Meeting not found or you do not have permission to join';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
