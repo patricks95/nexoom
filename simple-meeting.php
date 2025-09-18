@@ -14,7 +14,7 @@ $userRole = $user['role'];
 
 // If no meeting ID provided, redirect to index
 if (empty($meetingId)) {
-    header('Location: index.php');
+    header('Location: home.php');
     exit();
 }
 
@@ -83,7 +83,6 @@ if ($meetingData && empty($error_message)) {
     <title>Video Meeting - Nexoom</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://sdk.videosdk.live/js-sdk/0.0.68/videosdk.js"></script>
     <style>
         * {
             margin: 0;
@@ -93,7 +92,7 @@ if ($meetingData && empty($error_message)) {
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #000;
             height: 100vh;
             overflow: hidden;
         }
@@ -176,22 +175,6 @@ if ($meetingData && empty($error_message)) {
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
-        }
-        
-        .control-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-            transform: translateX(-100%);
-            transition: transform 0.6s;
-        }
-        
-        .control-btn:hover::before {
-            transform: translateX(100%);
         }
         
         .control-btn:hover {
@@ -386,7 +369,7 @@ if ($meetingData && empty($error_message)) {
         <div class="error">
             <h3 style="font-size: 24px; margin-bottom: 20px;">❌ Error</h3>
             <p style="font-size: 16px; margin-bottom: 30px;"><?php echo htmlspecialchars($error_message); ?></p>
-            <button onclick="window.location.href='index.php'" style="background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; padding: 15px 30px; border-radius: 25px; cursor: pointer; font-size: 16px; font-weight: 600;">
+            <button onclick="window.location.href='home.php'" style="background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; padding: 15px 30px; border-radius: 25px; cursor: pointer; font-size: 16px; font-weight: 600;">
                 Go Back
             </button>
         </div>
@@ -445,7 +428,7 @@ if ($meetingData && empty($error_message)) {
         </div>
         
         <script>
-            let meeting = null;
+            let localStream = null;
             let isMicOn = true;
             let isVideoOn = true;
             let isScreenSharing = false;
@@ -456,180 +439,58 @@ if ($meetingData && empty($error_message)) {
             const userRole = '<?php echo $userRole; ?>';
             const userId = '<?php echo $user["id"]; ?>';
             const userName = '<?php echo $user["full_name"]; ?>';
-            const apiKey = '0fc8e1a5-c073-407c-9bf4-153442433432';
             
-            // Initialize VideoSDK meeting
-            async function initVideoSDKMeeting() {
+            // Initialize simple video meeting
+            async function initSimpleMeeting() {
                 try {
                     document.getElementById('loading').style.display = 'block';
                     
-                    // Configure VideoSDK
-                    VideoSDK.config(apiKey);
-                    
-                    // Create meeting with proper configuration
-                    meeting = VideoSDK.initMeeting({
-                        meetingId: meetingId,
-                        name: userName,
-                        micEnabled: true,
-                        webcamEnabled: true,
-                        participantId: userId,
-                        // Add these configurations for better compatibility
-                        enableScreenShare: true,
-                        enableChat: true,
-                        enablePoll: true,
-                        enableWhiteboard: true,
-                        enableRecording: true,
-                        // Use a more reliable meeting ID format
-                        meetingId: meetingId.replace('meeting_', ''),
-                        // Add debug mode
-                        debug: true
+                    // Get user media
+                    localStream = await navigator.mediaDevices.getUserMedia({
+                        video: true,
+                        audio: true
                     });
                     
-                    // Set up event listeners
-                    setupMeetingEvents();
+                    // Create local video element
+                    const videoGrid = document.getElementById('video-grid');
+                    const videoItem = document.createElement('div');
+                    videoItem.className = 'video-item local';
+                    videoItem.id = 'local-video';
                     
-                    // Join meeting with timeout
-                    setTimeout(() => {
-                        meeting.join();
-                    }, 1000);
+                    const video = document.createElement('video');
+                    video.srcObject = localStream;
+                    video.autoplay = true;
+                    video.muted = true;
+                    video.playsInline = true;
+                    video.id = 'local-video-element';
                     
-                    console.log('VideoSDK meeting initialized successfully');
+                    const label = document.createElement('div');
+                    label.className = 'video-label';
+                    label.textContent = 'You';
+                    
+                    videoItem.appendChild(video);
+                    videoItem.appendChild(label);
+                    videoGrid.appendChild(videoItem);
+                    
+                    // Hide loading
+                    document.getElementById('loading').style.display = 'none';
+                    
+                    console.log('Simple meeting initialized successfully');
                     
                 } catch (error) {
-                    console.error('Error initializing VideoSDK meeting:', error);
-                    document.getElementById('loading').innerHTML = '<div class="spinner"></div><div>Error starting meeting. Please try again.</div>';
-                }
-            }
-            
-            // Set up meeting event listeners
-            function setupMeetingEvents() {
-                // Meeting joined
-                meeting.on("meeting-joined", () => {
-                    document.getElementById('loading').style.display = 'none';
-                    console.log('Successfully joined meeting');
-                    // Add local video to grid
-                    addLocalVideo();
-                });
-                
-                // Participant joined
-                meeting.on("participant-joined", (participant) => {
-                    console.log('Participant joined:', participant);
-                    updateParticipantCount();
-                    addParticipantVideo(participant);
-                });
-                
-                // Participant left
-                meeting.on("participant-left", (participant) => {
-                    console.log('Participant left:', participant);
-                    updateParticipantCount();
-                    removeParticipantVideo(participant.id);
-                });
-                
-                // Meeting left
-                meeting.on("meeting-left", () => {
-                    console.log('Left meeting');
-                    window.location.href = 'home.php';
-                });
-                
-                // Error handling
-                meeting.on("error", (error) => {
-                    console.error('Meeting error:', error);
-                    document.getElementById('loading').innerHTML = '<div class="spinner"></div><div>Error in meeting. Please try again.</div>';
-                });
-                
-                // Add timeout fallback
-                setTimeout(() => {
-                    if (document.getElementById('loading').style.display !== 'none') {
-                        console.log('Meeting taking too long to start, trying alternative approach...');
-                        // Try to start meeting again
-                        try {
-                            meeting.join();
-                        } catch (e) {
-                            console.error('Failed to join meeting:', e);
-                            document.getElementById('loading').innerHTML = '<div class="spinner"></div><div>Unable to start meeting. Please refresh and try again.</div>';
-                        }
-                    }
-                }, 10000); // 10 second timeout
-            }
-            
-            // Add local video to grid
-            function addLocalVideo() {
-                const videoGrid = document.getElementById('video-grid');
-                const videoItem = document.createElement('div');
-                videoItem.className = 'video-item local';
-                videoItem.id = 'local-video';
-                
-                const video = document.createElement('video');
-                video.autoplay = true;
-                video.playsInline = true;
-                video.muted = true;
-                video.id = 'local-video-element';
-                
-                const label = document.createElement('div');
-                label.className = 'video-label';
-                label.textContent = 'You';
-                
-                videoItem.appendChild(video);
-                videoItem.appendChild(label);
-                videoGrid.appendChild(videoItem);
-                
-                // Get user media for local video
-                navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-                    .then(stream => {
-                        video.srcObject = stream;
-                    })
-                    .catch(error => {
-                        console.error('Error accessing camera:', error);
-                    });
-            }
-            
-            // Add participant video
-            function addParticipantVideo(participant) {
-                const videoGrid = document.getElementById('video-grid');
-                const videoItem = document.createElement('div');
-                videoItem.className = 'video-item';
-                videoItem.id = `participant-${participant.id}`;
-                
-                const video = document.createElement('video');
-                video.autoplay = true;
-                video.playsInline = true;
-                video.muted = true;
-                
-                const label = document.createElement('div');
-                label.className = 'video-label';
-                label.textContent = participant.displayName || 'Participant';
-                
-                videoItem.appendChild(video);
-                videoItem.appendChild(label);
-                videoGrid.appendChild(videoItem);
-                
-                // Set up video stream
-                participant.on("stream-enabled", (stream) => {
-                    video.srcObject = stream;
-                });
-            }
-            
-            // Remove participant video
-            function removeParticipantVideo(participantId) {
-                const videoItem = document.getElementById(`participant-${participantId}`);
-                if (videoItem) {
-                    videoItem.remove();
-                }
-            }
-            
-            // Update participant count
-            function updateParticipantCount() {
-                if (meeting) {
-                    const participants = meeting.participants;
-                    participantCount = Object.keys(participants).length;
-                    document.getElementById('participant-count').textContent = participantCount;
+                    console.error('Error initializing simple meeting:', error);
+                    document.getElementById('loading').innerHTML = '<div class="spinner"></div><div>Error accessing camera/microphone. Please check permissions.</div>';
                 }
             }
             
             // Toggle microphone
             function toggleMic() {
-                if (meeting) {
-                    meeting.toggleMic();
+                if (localStream) {
+                    const audioTracks = localStream.getAudioTracks();
+                    audioTracks.forEach(track => {
+                        track.enabled = !track.enabled;
+                    });
+                    
                     isMicOn = !isMicOn;
                     const micBtn = document.getElementById('mic-btn');
                     micBtn.classList.toggle('muted', !isMicOn);
@@ -639,8 +500,12 @@ if ($meetingData && empty($error_message)) {
             
             // Toggle video
             function toggleVideo() {
-                if (meeting) {
-                    meeting.toggleWebcam();
+                if (localStream) {
+                    const videoTracks = localStream.getVideoTracks();
+                    videoTracks.forEach(track => {
+                        track.enabled = !track.enabled;
+                    });
+                    
                     isVideoOn = !isVideoOn;
                     const videoBtn = document.getElementById('video-btn');
                     videoBtn.classList.toggle('muted', !isVideoOn);
@@ -658,24 +523,55 @@ if ($meetingData && empty($error_message)) {
             }
             
             // Start screen sharing
-            function startScreenShare() {
-                if (meeting) {
-                    meeting.enableScreenShare();
+            async function startScreenShare() {
+                try {
+                    const screenStream = await navigator.mediaDevices.getDisplayMedia({
+                        video: true,
+                        audio: true
+                    });
+                    
+                    // Replace local video with screen share
+                    const localVideo = document.getElementById('local-video-element');
+                    if (localVideo) {
+                        localVideo.srcObject = screenStream;
+                    }
+                    
                     isScreenSharing = true;
                     const screenBtn = document.getElementById('screen-btn');
                     screenBtn.classList.add('active');
                     screenBtn.innerHTML = '<i class="fas fa-stop"></i>';
+                    
+                    // Handle screen share end
+                    screenStream.getVideoTracks()[0].onended = () => {
+                        stopScreenShare();
+                    };
+                    
+                } catch (error) {
+                    console.error('Error starting screen share:', error);
                 }
             }
             
             // Stop screen sharing
-            function stopScreenShare() {
-                if (meeting) {
-                    meeting.disableScreenShare();
+            async function stopScreenShare() {
+                try {
+                    // Get back to camera
+                    localStream = await navigator.mediaDevices.getUserMedia({
+                        video: true,
+                        audio: true
+                    });
+                    
+                    const localVideo = document.getElementById('local-video-element');
+                    if (localVideo) {
+                        localVideo.srcObject = localStream;
+                    }
+                    
                     isScreenSharing = false;
                     const screenBtn = document.getElementById('screen-btn');
                     screenBtn.classList.remove('active');
                     screenBtn.innerHTML = '<i class="fas fa-desktop"></i>';
+                    
+                } catch (error) {
+                    console.error('Error stopping screen share:', error);
                 }
             }
             
@@ -710,19 +606,19 @@ if ($meetingData && empty($error_message)) {
             
             // Hangup
             function hangup() {
-                if (meeting) {
-                    meeting.leave();
+                if (localStream) {
+                    localStream.getTracks().forEach(track => track.stop());
                 }
-                window.location.href = 'index.php';
+                window.location.href = 'home.php';
             }
             
             // Initialize when page loads
-            window.addEventListener('load', initVideoSDKMeeting);
+            window.addEventListener('load', initSimpleMeeting);
             
             // Handle page unload
             window.addEventListener('beforeunload', function() {
-                if (meeting) {
-                    meeting.leave();
+                if (localStream) {
+                    localStream.getTracks().forEach(track => track.stop());
                 }
             });
             
