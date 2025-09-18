@@ -55,7 +55,7 @@ $user = getCurrentUser();
             <!-- Meeting ID Input -->
             <div class="bg-white rounded-2xl p-6 mb-8">
                 <h3 class="text-xl font-bold text-gray-800 mb-4 text-center">Join Specific Meeting</h3>
-                <form method="GET" action="webrtc-conference.php" class="flex flex-col md:flex-row gap-4">
+                <form method="GET" action="videosdk-meeting.php" class="flex flex-col md:flex-row gap-4">
                     <input type="text" name="room" placeholder="Enter Meeting ID" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     <input type="hidden" name="role" value="viewer">
                     <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300">
@@ -73,7 +73,7 @@ $user = getCurrentUser();
                         </div>
                         <h2 class="text-2xl font-bold text-gray-800 mb-4">Broadcaster</h2>
                         <p class="text-gray-600 mb-6">Start a meeting, share your screen, and manage participants</p>
-                        <a href="webrtc-conference.php?room=meeting_<?php echo uniqid(); ?>" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300 inline-block">
+                        <a href="videosdk-meeting.php?room=meeting_<?php echo uniqid(); ?>" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300 inline-block">
                             Start Meeting
                         </a>
                     </div>
@@ -87,7 +87,7 @@ $user = getCurrentUser();
                         </div>
                         <h2 class="text-2xl font-bold text-gray-800 mb-4">Viewer</h2>
                         <p class="text-gray-600 mb-6">Join a meeting as a participant and interact with others</p>
-                        <a href="webrtc-conference.php?room=demo_meeting" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300 inline-block">
+                        <a href="videosdk-meeting.php?room=demo_meeting" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300 inline-block">
                             Join Meeting
                         </a>
                     </div>
