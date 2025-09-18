@@ -216,10 +216,12 @@ if ($meetingData && empty($error_message)) {
                     startSignaling();
                     
                     console.log('Video conference initialized successfully');
+                    return Promise.resolve();
                     
                 } catch (error) {
                     console.error('Error initializing video conference:', error);
                     document.getElementById('loading').innerHTML = 'Error accessing camera/microphone. Please check permissions.';
+                    return Promise.reject(error);
                 }
             }
             
@@ -247,7 +249,10 @@ if ($meetingData && empty($error_message)) {
             // Start signaling
             function startSignaling() {
                 // Join the room
-                sendSignalingMessage('join', {});
+                sendSignalingMessage('join', {
+                    name: userName,
+                    role: userRole
+                });
                 
                 // Start polling for messages
                 pollForMessages();
@@ -257,17 +262,23 @@ if ($meetingData && empty($error_message)) {
             
             // Send signaling message
             function sendSignalingMessage(action, data) {
-                fetch('signaling-server.php', {
+                const formData = new FormData();
+                formData.append('action', action);
+                formData.append('room_id', meetingId);
+                formData.append('user_id', userId);
+                formData.append('data', JSON.stringify(data));
+                
+                fetch('simple-signaling.php', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `action=${action}&room_id=${meetingId}&user_id=${userId}&message=${encodeURIComponent(JSON.stringify(data))}`
+                    body: formData
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         console.log('Signaling message sent:', action);
+                        if (action === 'join' && data.participants) {
+                            updateParticipantCount(data.participants.length);
+                        }
                     }
                 })
                 .catch(error => {
@@ -277,25 +288,135 @@ if ($meetingData && empty($error_message)) {
             
             // Poll for messages
             function pollForMessages() {
-                fetch('signaling-server.php', {
+                const formData = new FormData();
+                formData.append('action', 'get-messages');
+                formData.append('room_id', meetingId);
+                formData.append('user_id', userId);
+                
+                fetch('simple-signaling.php', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `action=get-participants&room_id=${meetingId}&user_id=${userId}`
+                    body: formData
                 })
                 .then(response => response.json())
                 .then(data => {
-                    if (data.success) {
-                        updateParticipantCount(data.participants.length);
+                    if (data.success && data.messages) {
+                        data.messages.forEach(msg => {
+                            handleSignalingMessage(msg.message);
+                        });
                     }
                 })
                 .catch(error => {
                     console.error('Error polling for messages:', error);
                 });
                 
-                // Poll every 2 seconds
-                setTimeout(pollForMessages, 2000);
+                // Poll every 1 second for better responsiveness
+                setTimeout(pollForMessages, 1000);
+            }
+            
+            // Handle signaling messages
+            function handleSignalingMessage(message) {
+                switch (message.type) {
+                    case 'user-joined':
+                        if (message.user_id !== userId) {
+                            console.log('User joined:', message.name);
+                            updateParticipantCount(message.participants.length);
+                            // Create peer connection for new user
+                            createPeerConnection(message.user_id);
+                        }
+                        break;
+                    case 'user-left':
+                        if (message.user_id !== userId) {
+                            console.log('User left:', message.user_id);
+                            updateParticipantCount(message.participants.length);
+                            // Close peer connection
+                            if (peerConnections.has(message.user_id)) {
+                                peerConnections.get(message.user_id).close();
+                                peerConnections.delete(message.user_id);
+                            }
+                        }
+                        break;
+                    case 'offer':
+                        if (message.from !== userId) {
+                            handleOffer(message.from, message.offer);
+                        }
+                        break;
+                    case 'answer':
+                        if (message.from !== userId) {
+                            handleAnswer(message.from, message.answer);
+                        }
+                        break;
+                    case 'ice-candidate':
+                        if (message.from !== userId) {
+                            handleIceCandidate(message.from, message.candidate);
+                        }
+                        break;
+                }
+            }
+            
+            // Create peer connection
+            function createPeerConnection(remoteUserId) {
+                const peerConnection = new RTCPeerConnection(iceServers);
+                peerConnections.set(remoteUserId, peerConnection);
+                
+                // Add local stream
+                if (localStream) {
+                    localStream.getTracks().forEach(track => {
+                        peerConnection.addTrack(track, localStream);
+                    });
+                }
+                
+                // Handle remote stream
+                peerConnection.ontrack = (event) => {
+                    const remoteStream = event.streams[0];
+                    const videoElement = createVideoElement(remoteStream, `User ${remoteUserId}`, 'remote');
+                    document.getElementById('video-grid').appendChild(videoElement);
+                    remoteStreams.set(remoteUserId, remoteStream);
+                };
+                
+                // Handle ICE candidates
+                peerConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        sendSignalingMessage('ice-candidate', {
+                            to: remoteUserId,
+                            candidate: event.candidate
+                        });
+                    }
+                };
+                
+                return peerConnection;
+            }
+            
+            // Handle offer
+            async function handleOffer(from, offer) {
+                let peerConnection = peerConnections.get(from);
+                if (!peerConnection) {
+                    peerConnection = createPeerConnection(from);
+                }
+                
+                await peerConnection.setRemoteDescription(offer);
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                
+                sendSignalingMessage('answer', {
+                    to: from,
+                    answer: answer
+                });
+            }
+            
+            // Handle answer
+            async function handleAnswer(from, answer) {
+                const peerConnection = peerConnections.get(from);
+                if (peerConnection) {
+                    await peerConnection.setRemoteDescription(answer);
+                }
+            }
+            
+            // Handle ICE candidate
+            async function handleIceCandidate(from, candidate) {
+                const peerConnection = peerConnections.get(from);
+                if (peerConnection) {
+                    await peerConnection.addIceCandidate(candidate);
+                }
             }
             
             // Update participant count
@@ -446,11 +567,68 @@ if ($meetingData && empty($error_message)) {
                 window.location.href = 'index.php';
             }
             
+            // Initialize peer connections for existing participants
+            function initPeerConnections() {
+                // Get existing participants and create connections
+                const formData = new FormData();
+                formData.append('action', 'get-participants');
+                formData.append('room_id', meetingId);
+                formData.append('user_id', userId);
+                
+                fetch('simple-signaling.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.participants) {
+                        data.participants.forEach(participantId => {
+                            if (participantId !== userId) {
+                                createPeerConnection(participantId);
+                                // Send offer to establish connection
+                                sendOffer(participantId);
+                            }
+                        });
+                        updateParticipantCount(data.participants.length);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error getting participants:', error);
+                });
+            }
+            
+            // Send offer to establish connection
+            async function sendOffer(toUserId) {
+                const peerConnection = peerConnections.get(toUserId);
+                if (peerConnection) {
+                    try {
+                        const offer = await peerConnection.createOffer();
+                        await peerConnection.setLocalDescription(offer);
+                        
+                        sendSignalingMessage('offer', {
+                            to: toUserId,
+                            offer: offer
+                        });
+                    } catch (error) {
+                        console.error('Error creating offer:', error);
+                    }
+                }
+            }
+            
             // Initialize when page loads
-            window.addEventListener('load', initVideoConference);
+            window.addEventListener('load', function() {
+                initVideoConference().then(() => {
+                    // Initialize peer connections after video is ready
+                    setTimeout(initPeerConnections, 1000);
+                });
+            });
             
             // Handle page unload
-            window.addEventListener('beforeunload', hangup);
+            window.addEventListener('beforeunload', function() {
+                // Leave the room
+                sendSignalingMessage('leave', {});
+                hangup();
+            });
             
         </script>
         <?php endif; ?>
