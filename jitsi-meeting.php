@@ -11,6 +11,7 @@ if (!isLoggedIn()) {
 $user = getCurrentUser();
 $meetingId = isset($_GET['room']) ? $_GET['room'] : '';
 $userRole = $user['role'];
+$error_message = '';
 
 // Validate meeting ID
 if (empty($meetingId)) {
@@ -19,8 +20,8 @@ if (empty($meetingId)) {
 }
 
 // Get meeting details from database
-$meeting = $meeting->getMeeting($meetingId);
-$isValidMeeting = $meeting !== false;
+$meetingData = $meeting->getMeeting($meetingId);
+$isValidMeeting = $meetingData !== false;
 
 // If meeting doesn't exist, create it (for broadcasters)
 if (!$isValidMeeting && $userRole === 'broadcaster') {
@@ -35,18 +36,20 @@ if (!$isValidMeeting && $userRole === 'broadcaster') {
     );
     
     if ($result['success']) {
-        $meeting = $meeting->getMeeting($meetingId);
+        $meetingData = $meeting->getMeeting($meetingId);
         $isValidMeeting = true;
+    } else {
+        $error_message = $result['message'];
     }
 }
 
 // Join meeting if valid
-if ($isValidMeeting) {
+if ($isValidMeeting && empty($error_message)) {
     $joinResult = $meeting->joinMeeting($meetingId, $user['id'], $userRole === 'broadcaster' ? 'host' : 'participant');
     if (!$joinResult['success']) {
         $error_message = $joinResult['message'];
     }
-} else {
+} elseif (!$isValidMeeting) {
     $error_message = 'Meeting not found or you do not have permission to join';
 }
 ?>
@@ -277,9 +280,9 @@ if ($isValidMeeting) {
             <button onclick="window.location.href='index.php'">Go Back</button>
         </div>
         
-        <div class="error-message" id="errorMessage" style="display: none;">
+        <div class="error-message" id="errorMessage" style="display: <?php echo !empty($error_message) ? 'block' : 'none'; ?>;">
             <h3><i class="fas fa-exclamation-triangle"></i> Meeting Error</h3>
-            <p id="errorText">The meeting you're trying to join is not available.</p>
+            <p id="errorText"><?php echo !empty($error_message) ? htmlspecialchars($error_message) : 'The meeting you\'re trying to join is not available.'; ?></p>
             <button onclick="retryConnection()">Try Again</button>
             <button onclick="window.location.href='index.php'">Go Back</button>
         </div>
@@ -328,6 +331,13 @@ if ($isValidMeeting) {
             }
             
             init() {
+                // Check if there's an error message
+                const errorElement = document.getElementById('errorMessage');
+                if (errorElement && errorElement.style.display !== 'none') {
+                    this.showMeetingError();
+                    return;
+                }
+                
                 // First validate the meeting
                 if (!this.isValidMeeting) {
                     this.showMeetingError();
