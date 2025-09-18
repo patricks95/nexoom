@@ -23,8 +23,8 @@ if (empty($meetingId)) {
 $meetingData = $meeting->getMeeting($meetingId);
 $isValidMeeting = $meetingData !== false;
 
-// If meeting doesn't exist, create it (for broadcasters)
-if (!$isValidMeeting && $userRole === 'broadcaster') {
+// If meeting doesn't exist, create it (for broadcasters and admins)
+if (!$isValidMeeting && ($userRole === 'broadcaster' || $userRole === 'admin')) {
     $result = $meeting->createMeeting(
         $meetingId,
         'Meeting ' . $meetingId,

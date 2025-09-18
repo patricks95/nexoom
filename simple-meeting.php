@@ -27,8 +27,8 @@ $success_message = '';
 $meetingData = $meeting->getMeeting($meetingId);
 
 if (!$meetingData) {
-    // Meeting doesn't exist, create it if user is broadcaster
-    if ($userRole === 'broadcaster') {
+    // Meeting doesn't exist, create it if user is broadcaster or admin
+    if ($userRole === 'broadcaster' || $userRole === 'admin') {
         $result = $meeting->createMeeting(
             $meetingId,
             'Meeting ' . $meetingId,
@@ -46,17 +46,32 @@ if (!$meetingData) {
             $error_message = $result['message'];
         }
     } else {
-        $error_message = 'Meeting not found. Only broadcasters can create new meetings.';
+        $error_message = 'Meeting not found. Only broadcasters and admins can create new meetings.';
     }
 }
 
 // Join meeting if valid
 if ($meetingData && empty($error_message)) {
-    $joinResult = $meeting->joinMeeting($meetingId, $user['id'], $userRole === 'broadcaster' ? 'host' : 'participant');
-    if (!$joinResult['success']) {
-        $error_message = $joinResult['message'];
+    // Check if user is already in meeting
+    $participants = $meeting->getMeetingParticipants($meetingId);
+    $userAlreadyInMeeting = false;
+    
+    foreach ($participants as $participant) {
+        if ($participant['user_id'] == $user['id'] && $participant['is_active']) {
+            $userAlreadyInMeeting = true;
+            break;
+        }
+    }
+    
+    if (!$userAlreadyInMeeting) {
+        $joinResult = $meeting->joinMeeting($meetingId, $user['id'], $userRole === 'broadcaster' ? 'host' : 'participant');
+        if (!$joinResult['success']) {
+            $error_message = $joinResult['message'];
+        } else {
+            $success_message = 'Successfully joined meeting!';
+        }
     } else {
-        $success_message = 'Successfully joined meeting!';
+        $success_message = 'Already in meeting!';
     }
 }
 ?>

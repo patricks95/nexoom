@@ -37,6 +37,14 @@ $user = getCurrentUser();
             <p class="text-xl text-white opacity-90">Professional Video Conferencing Platform</p>
             <div class="mt-4">
                 <span class="text-white opacity-75">Welcome, <?php echo htmlspecialchars($user['full_name']); ?>!</span>
+                <a href="meetings.php" class="ml-4 text-white hover:text-yellow-300 transition duration-300">
+                    <i class="fas fa-video"></i> View Meetings
+                </a>
+                <?php if ($user['role'] === 'admin'): ?>
+                <a href="admin.php" class="ml-4 text-white hover:text-yellow-300 transition duration-300">
+                    <i class="fas fa-cog"></i> Admin Panel
+                </a>
+                <?php endif; ?>
                 <a href="logout.php" class="ml-4 text-white hover:text-yellow-300 transition duration-300">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </a>
@@ -65,7 +73,7 @@ $user = getCurrentUser();
                         </div>
                         <h2 class="text-2xl font-bold text-gray-800 mb-4">Broadcaster</h2>
                         <p class="text-gray-600 mb-6">Start a meeting, share your screen, and manage participants</p>
-                        <a href="simple-meeting.php?room=meeting_<?php echo time(); ?>" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300 inline-block">
+                        <a href="simple-meeting.php?room=meeting_<?php echo uniqid(); ?>" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300 inline-block">
                             Start Meeting
                         </a>
                     </div>

@@ -144,6 +144,8 @@ class Auth {
                 return $user_role === 'admin';
             case 'manage_meetings':
                 return in_array($user_role, ['admin', 'broadcaster']);
+            case 'admin_access':
+                return $user_role === 'admin';
             default:
                 return false;
         }

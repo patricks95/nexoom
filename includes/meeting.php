@@ -73,7 +73,7 @@ class Meeting {
             
             // Check if user is already in meeting
             if ($this->isUserInMeeting($meeting['id'], $user_id)) {
-                return ['success' => false, 'message' => 'User already in meeting'];
+                return ['success' => true, 'message' => 'User already in meeting'];
             }
             
             // Check participant limit
