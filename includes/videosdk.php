@@ -298,11 +298,9 @@ class VideoSDK {
      * Make HTTP request to VideoSDK API
      */
     private function makeRequest($method, $url, $data = null) {
-        // Generate JWT token for authentication
-        $token = $this->generateToken();
-        
+        // Use API key directly for authentication (VideoSDK uses API key, not JWT)
         $headers = [
-            'Authorization: Bearer ' . $token,
+            'Authorization: ' . $this->apiKey,
             'Content-Type: application/json'
         ];
         
@@ -358,8 +356,8 @@ class VideoSDK {
      * Get VideoSDK configuration for frontend
      */
     public function getFrontendConfig($meetingId, $participantName, $participantId = null) {
-        // Use the provided token directly for better compatibility
-        $token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlrZXkiOiIwZmM4ZTFhNS1jMDczLTQwN2MtOWJmNC0xNTM0NDI0MzM0MzIiLCJwZXJtaXNzaW9ucyI6WyJhbGxvd19qb2luIl0sImlhdCI6MTc1ODMwMTAwMiwiZXhwIjoxNzg5ODM3MDAyfQ.fJDgzB4C2cdU9zi7i5uBHt6tGnhFzEqmLeRajtcONrM';
+        // Generate a fresh token for each meeting
+        $token = $this->generateToken();
         
         return [
             'apiKey' => $this->apiKey,
