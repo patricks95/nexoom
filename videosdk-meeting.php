@@ -15,7 +15,7 @@ $userRole = $user['role'];
 
 // If no meeting ID provided, redirect to index
 if (empty($meetingId)) {
-    header('Location: index.php');
+    header('Location: home.php');
     exit();
 }
 
@@ -93,6 +93,9 @@ if ($meetingData && empty($error_message)) {
         $success_message = 'Already in meeting!';
     }
 }
+
+// Get VideoSDK configuration
+$videoSDKConfig = getVideoSDKConfig($meetingId, $user['full_name'], $user['id']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -249,6 +252,15 @@ if ($meetingData && empty($error_message)) {
             color: white;
         }
         
+        .control-btn.record {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+        
+        .control-btn.record.active {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+        
         .control-btn.hangup {
             background: linear-gradient(135deg, #ef4444, #dc2626);
             color: white;
@@ -397,6 +409,40 @@ if ($meetingData && empty($error_message)) {
         .chat-input input::placeholder {
             color: rgba(255, 255, 255, 0.6);
         }
+        
+        .recording-indicator {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            z-index: 1000;
+            backdrop-filter: blur(20px);
+            display: none;
+        }
+        
+        .recording-indicator.active {
+            display: block;
+        }
+        
+        .recording-indicator .pulse {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            margin-right: 10px;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -405,7 +451,7 @@ if ($meetingData && empty($error_message)) {
         <div class="error">
             <h3 style="font-size: 24px; margin-bottom: 20px;">❌ Error</h3>
             <p style="font-size: 16px; margin-bottom: 30px;"><?php echo htmlspecialchars($error_message); ?></p>
-            <button onclick="window.location.href='index.php'" style="background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; padding: 15px 30px; border-radius: 25px; cursor: pointer; font-size: 16px; font-weight: 600;">
+            <button onclick="window.location.href='home.php'" style="background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; padding: 15px 30px; border-radius: 25px; cursor: pointer; font-size: 16px; font-weight: 600;">
                 Go Back
             </button>
         </div>
@@ -418,6 +464,11 @@ if ($meetingData && empty($error_message)) {
         <div class="participant-count">
             <i class="fas fa-users"></i> 
             <span style="margin-left: 10px; font-weight: 600;" id="participant-count">1</span>
+        </div>
+        
+        <div class="recording-indicator" id="recording-indicator">
+            <span class="pulse"></span>
+            Recording in progress...
         </div>
         
         <?php if (!empty($success_message)): ?>
@@ -448,6 +499,11 @@ if ($meetingData && empty($error_message)) {
             <button class="control-btn chat" id="chat-btn" onclick="toggleChat()">
                 <i class="fas fa-comments"></i>
             </button>
+            <?php if ($userRole === 'broadcaster' || $userRole === 'admin'): ?>
+            <button class="control-btn record" id="record-btn" onclick="toggleRecording()">
+                <i class="fas fa-circle"></i>
+            </button>
+            <?php endif; ?>
             <button class="control-btn hangup" id="hangup-btn" onclick="hangup()">
                 <i class="fas fa-phone-slash"></i>
             </button>
@@ -469,15 +525,11 @@ if ($meetingData && empty($error_message)) {
             let isVideoOn = true;
             let isScreenSharing = false;
             let isChatOpen = false;
+            let isRecording = false;
             let participantCount = 1;
             
-            const meetingId = '<?php echo $meetingId; ?>';
-            const userRole = '<?php echo $userRole; ?>';
-            const userId = '<?php echo $user["id"]; ?>';
-            const userName = '<?php echo $user["full_name"]; ?>';
-            
-            // Get VideoSDK configuration
-            const videoSDKConfig = <?php echo json_encode(getVideoSDKConfig($meetingId, $user['full_name'], $user['id'])); ?>;
+            // VideoSDK configuration from PHP
+            const videoSDKConfig = <?php echo json_encode($videoSDKConfig); ?>;
             
             // Initialize VideoSDK meeting
             async function initVideoSDKMeeting() {
@@ -568,6 +620,19 @@ if ($meetingData && empty($error_message)) {
                 meeting.on("error", (error) => {
                     console.error('Meeting error:', error);
                     document.getElementById('loading').innerHTML = '<div class="spinner"></div><div>Error in meeting. Please try again.</div>';
+                });
+                
+                // Recording events
+                meeting.on("recording-started", () => {
+                    console.log('Recording started');
+                    isRecording = true;
+                    updateRecordingUI();
+                });
+                
+                meeting.on("recording-stopped", () => {
+                    console.log('Recording stopped');
+                    isRecording = false;
+                    updateRecordingUI();
                 });
                 
                 // Add timeout fallback
@@ -712,6 +777,49 @@ if ($meetingData && empty($error_message)) {
                 }
             }
             
+            // Toggle recording
+            function toggleRecording() {
+                if (!isRecording) {
+                    startRecording();
+                } else {
+                    stopRecording();
+                }
+            }
+            
+            // Start recording
+            function startRecording() {
+                if (meeting) {
+                    meeting.startRecording();
+                    isRecording = true;
+                    updateRecordingUI();
+                }
+            }
+            
+            // Stop recording
+            function stopRecording() {
+                if (meeting) {
+                    meeting.stopRecording();
+                    isRecording = false;
+                    updateRecordingUI();
+                }
+            }
+            
+            // Update recording UI
+            function updateRecordingUI() {
+                const recordBtn = document.getElementById('record-btn');
+                const recordingIndicator = document.getElementById('recording-indicator');
+                
+                if (isRecording) {
+                    recordBtn.classList.add('active');
+                    recordBtn.innerHTML = '<i class="fas fa-stop"></i>';
+                    recordingIndicator.classList.add('active');
+                } else {
+                    recordBtn.classList.remove('active');
+                    recordBtn.innerHTML = '<i class="fas fa-circle"></i>';
+                    recordingIndicator.classList.remove('active');
+                }
+            }
+            
             // Toggle chat
             function toggleChat() {
                 isChatOpen = !isChatOpen;
@@ -725,7 +833,7 @@ if ($meetingData && empty($error_message)) {
                     const input = document.getElementById('chat-input');
                     const message = input.value.trim();
                     if (message) {
-                        addChatMessage(userName, message);
+                        addChatMessage(videoSDKConfig.participantName, message);
                         input.value = '';
                     }
                 }
@@ -746,7 +854,7 @@ if ($meetingData && empty($error_message)) {
                 if (meeting) {
                     meeting.leave();
                 }
-                window.location.href = 'index.php';
+                window.location.href = 'home.php';
             }
             
             // Initialize when page loads
