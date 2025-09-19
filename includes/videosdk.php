@@ -60,10 +60,21 @@ class VideoSDK {
             ];
         }
         
+        // Provide more detailed error information
+        $errorMessage = 'Failed to create meeting';
+        if (isset($response['error'])) {
+            if (is_array($response['error'])) {
+                $errorMessage = $response['error']['message'] ?? $errorMessage;
+            } else {
+                $errorMessage = $response['error'];
+            }
+        }
+        
         return [
             'success' => false,
-            'message' => 'Failed to create meeting',
-            'error' => $response
+            'message' => $errorMessage,
+            'error' => $response,
+            'http_code' => $response['http_code'] ?? null
         ];
     }
     
@@ -287,8 +298,11 @@ class VideoSDK {
      * Make HTTP request to VideoSDK API
      */
     private function makeRequest($method, $url, $data = null) {
+        // Generate JWT token for authentication
+        $token = $this->generateToken();
+        
         $headers = [
-            'Authorization: ' . $this->apiKey,
+            'Authorization: Bearer ' . $token,
             'Content-Type: application/json'
         ];
         
@@ -313,7 +327,13 @@ class VideoSDK {
         $error = curl_error($ch);
         curl_close($ch);
         
+        // Log the request for debugging
+        error_log("VideoSDK API Request: $method $url");
+        error_log("VideoSDK API Response Code: $httpCode");
+        error_log("VideoSDK API Response: " . $response);
+        
         if ($error) {
+            error_log("VideoSDK API cURL Error: " . $error);
             return [
                 'error' => $error,
                 'http_code' => $httpCode
@@ -325,9 +345,11 @@ class VideoSDK {
         if ($httpCode >= 200 && $httpCode < 300) {
             return $decodedResponse;
         } else {
+            error_log("VideoSDK API Error Response: " . json_encode($decodedResponse));
             return [
                 'error' => $decodedResponse,
-                'http_code' => $httpCode
+                'http_code' => $httpCode,
+                'raw_response' => $response
             ];
         }
     }
@@ -336,7 +358,8 @@ class VideoSDK {
      * Get VideoSDK configuration for frontend
      */
     public function getFrontendConfig($meetingId, $participantName, $participantId = null) {
-        $token = $this->generateToken();
+        // Use the provided token directly for better compatibility
+        $token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlrZXkiOiIwZmM4ZTFhNS1jMDczLTQwN2MtOWJmNC0xNTM0NDI0MzM0MzIiLCJwZXJtaXNzaW9ucyI6WyJhbGxvd19qb2luIl0sImlhdCI6MTc1ODMwMTAwMiwiZXhwIjoxNzg5ODM3MDAyfQ.fJDgzB4C2cdU9zi7i5uBHt6tGnhFzEqmLeRajtcONrM';
         
         return [
             'apiKey' => $this->apiKey,

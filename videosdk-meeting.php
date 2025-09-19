@@ -28,45 +28,34 @@ $success_message = '';
 $meetingData = $meeting->getMeeting($meetingId);
 $videoSDKMeeting = null;
 
+// For VideoSDK, we don't need to create the meeting on the server side
+// VideoSDK will create the meeting when the first participant joins
 if (!$meetingData) {
-    // Meeting doesn't exist, create it if user is broadcaster or admin
+    // Meeting doesn't exist, create local record if user is broadcaster or admin
     if ($userRole === 'broadcaster' || $userRole === 'admin') {
-        // First create VideoSDK meeting
-        $videoSDKResult = createVideoSDKMeeting($meetingId);
+        $result = $meeting->createMeeting(
+            $meetingId,
+            'Meeting ' . $meetingId,
+            'Meeting created by ' . $user['full_name'],
+            $user['id'],
+            'public',
+            100,
+            null
+        );
         
-        if ($videoSDKResult['success']) {
-            // Then create local meeting record
-            $result = $meeting->createMeeting(
-                $meetingId,
-                'Meeting ' . $meetingId,
-                'Meeting created by ' . $user['full_name'],
-                $user['id'],
-                'public',
-                100,
-                null
-            );
-            
-            if ($result['success']) {
-                $meetingData = $meeting->getMeeting($meetingId);
-                $videoSDKMeeting = $videoSDKResult;
-                $success_message = 'Meeting created successfully!';
-            } else {
-                $error_message = $result['message'];
-            }
+        if ($result['success']) {
+            $meetingData = $meeting->getMeeting($meetingId);
+            $success_message = 'Meeting created successfully!';
         } else {
-            $error_message = 'Failed to create VideoSDK meeting: ' . $videoSDKResult['message'];
+            $error_message = $result['message'];
         }
     } else {
-        $error_message = 'Meeting not found. Only broadcasters and admins can create new meetings.';
+        // For viewers, we can still allow them to join if they have the meeting ID
+        // VideoSDK will handle the meeting creation automatically
+        $success_message = 'Joining meeting...';
     }
 } else {
-    // Validate existing meeting with VideoSDK
-    $videoSDKResult = validateVideoSDKMeeting($meetingId);
-    if ($videoSDKResult['success']) {
-        $videoSDKMeeting = $videoSDKResult;
-    } else {
-        $error_message = 'VideoSDK meeting validation failed: ' . $videoSDKResult['message'];
-    }
+    $success_message = 'Joining existing meeting...';
 }
 
 // Join meeting if valid
@@ -115,7 +104,7 @@ $videoSDKConfig = getVideoSDKConfig($meetingId, $user['full_name'], $user['id'])
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1a4d3a 0%, #2d5a3d 50%, #1a3d2e 100%);
             height: 100vh;
             overflow: hidden;
         }
@@ -137,17 +126,19 @@ $videoSDKConfig = getVideoSDKConfig($meetingId, $user['full_name'], $user['id'])
         
         .video-item {
             position: relative;
-            background: #1a1a1a;
-            border-radius: 15px;
+            background: linear-gradient(135deg, #1a3d2e, #2d5a3d);
+            border-radius: 20px;
             overflow: hidden;
             min-height: 200px;
-            border: 2px solid #333;
-            transition: all 0.3s ease;
+            border: 3px solid #4a7c59;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
         
         .video-item:hover {
-            border-color: #3b82f6;
-            transform: scale(1.02);
+            border-color: #d4af37;
+            transform: scale(1.05) translateY(-5px);
+            box-shadow: 0 20px 40px rgba(212, 175, 55, 0.3);
         }
         
         .video-item video {
@@ -160,14 +151,18 @@ $videoSDKConfig = getVideoSDKConfig($meetingId, $user['full_name'], $user['id'])
             position: absolute;
             top: 15px;
             left: 15px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 20px;
+            background: linear-gradient(135deg, #1a3d2e, #2d5a3d);
+            color: #d4af37;
+            padding: 10px 18px;
+            border-radius: 25px;
             font-size: 14px;
-            font-weight: 600;
+            font-weight: 700;
             z-index: 10;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(15px);
+            border: 2px solid #4a7c59;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .controls {
@@ -175,29 +170,31 @@ $videoSDKConfig = getVideoSDKConfig($meetingId, $user['full_name'], $user['id'])
             bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.9);
-            padding: 20px 40px;
-            border-radius: 50px;
+            background: linear-gradient(135deg, #1a3d2e, #2d5a3d);
+            padding: 25px 50px;
+            border-radius: 60px;
             display: flex;
-            gap: 20px;
+            gap: 25px;
             z-index: 1000;
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            border: 3px solid #4a7c59;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
         }
         
         .control-btn {
-            width: 60px;
-            height: 60px;
+            width: 70px;
+            height: 70px;
             border-radius: 50%;
-            border: none;
+            border: 3px solid #4a7c59;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
-            transition: all 0.3s ease;
+            font-size: 22px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
         }
         
         .control-btn::before {
@@ -207,7 +204,7 @@ $videoSDKConfig = getVideoSDKConfig($meetingId, $user['full_name'], $user['id'])
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            background: linear-gradient(45deg, transparent, rgba(212, 175, 55, 0.3), transparent);
             transform: translateX(-100%);
             transition: transform 0.6s;
         }
@@ -217,79 +214,102 @@ $videoSDKConfig = getVideoSDKConfig($meetingId, $user['full_name'], $user['id'])
         }
         
         .control-btn:hover {
-            transform: scale(1.1);
+            transform: scale(1.15) translateY(-3px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
         }
         
         .control-btn.mic {
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: white;
+            background: linear-gradient(135deg, #2d5a3d, #1a4d3a);
+            color: #d4af37;
+            border-color: #4a7c59;
         }
         
         .control-btn.mic.muted {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            color: white;
+            border-color: #ef4444;
         }
         
         .control-btn.video {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-            color: white;
+            background: linear-gradient(135deg, #2d5a3d, #1a4d3a);
+            color: #d4af37;
+            border-color: #4a7c59;
         }
         
         .control-btn.video.muted {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            color: white;
+            border-color: #ef4444;
         }
         
         .control-btn.screen {
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-            color: white;
+            background: linear-gradient(135deg, #d4af37, #b8941f);
+            color: #1a3d2e;
+            border-color: #d4af37;
         }
         
         .control-btn.screen.active {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            color: white;
+            border-color: #ef4444;
         }
         
         .control-btn.chat {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            color: white;
+            background: linear-gradient(135deg, #d4af37, #b8941f);
+            color: #1a3d2e;
+            border-color: #d4af37;
         }
         
         .control-btn.record {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
             color: white;
+            border-color: #ef4444;
         }
         
         .control-btn.record.active {
-            background: linear-gradient(135deg, #10b981, #059669);
+            background: linear-gradient(135deg, #2d5a3d, #1a4d3a);
+            color: #d4af37;
+            border-color: #4a7c59;
         }
         
         .control-btn.hangup {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
             color: white;
+            border-color: #ef4444;
         }
         
         .status-bar {
             position: fixed;
             top: 20px;
             left: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 15px 25px;
-            border-radius: 25px;
+            background: linear-gradient(135deg, #1a3d2e, #2d5a3d);
+            color: #d4af37;
+            padding: 18px 30px;
+            border-radius: 30px;
             z-index: 1000;
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            border: 3px solid #4a7c59;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         
         .participant-count {
             position: fixed;
             top: 20px;
             right: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 15px 25px;
-            border-radius: 25px;
+            background: linear-gradient(135deg, #1a3d2e, #2d5a3d);
+            color: #d4af37;
+            padding: 18px 30px;
+            border-radius: 30px;
             z-index: 1000;
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            border: 3px solid #4a7c59;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         
         .error {
@@ -297,14 +317,15 @@ $videoSDKConfig = getVideoSDKConfig($meetingId, $user['full_name'], $user['id'])
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.95);
-            color: white;
-            padding: 40px;
-            border-radius: 20px;
+            background: linear-gradient(135deg, #1a3d2e, #2d5a3d);
+            color: #dc2626;
+            padding: 50px;
+            border-radius: 25px;
             text-align: center;
             z-index: 1001;
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            border: 3px solid #dc2626;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
         }
         
         .success {
@@ -312,12 +333,17 @@ $videoSDKConfig = getVideoSDKConfig($meetingId, $user['full_name'], $user['id'])
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(16, 185, 129, 0.9);
-            color: white;
-            padding: 15px 30px;
-            border-radius: 25px;
+            background: linear-gradient(135deg, #2d5a3d, #1a4d3a);
+            color: #d4af37;
+            padding: 18px 35px;
+            border-radius: 30px;
             z-index: 1000;
-            backdrop-filter: blur(20px);
+            backdrop-filter: blur(25px);
+            border: 3px solid #4a7c59;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         
         .loading {
@@ -325,20 +351,24 @@ $videoSDKConfig = getVideoSDKConfig($meetingId, $user['full_name'], $user['id'])
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: white;
-            font-size: 20px;
+            color: #d4af37;
+            font-size: 22px;
             z-index: 999;
             text-align: center;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         
         .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid #3b82f6;
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(212, 175, 55, 0.3);
+            border-top: 5px solid #d4af37;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+            margin: 0 auto 25px;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
         }
         
         @keyframes spin {
@@ -351,41 +381,49 @@ $videoSDKConfig = getVideoSDKConfig($meetingId, $user['full_name'], $user['id'])
             right: 20px;
             top: 50%;
             transform: translateY(-50%);
-            width: 350px;
-            height: 500px;
-            background: rgba(0, 0, 0, 0.9);
-            border-radius: 20px;
+            width: 380px;
+            height: 550px;
+            background: linear-gradient(135deg, #1a3d2e, #2d5a3d);
+            border-radius: 25px;
             display: none;
             z-index: 1000;
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            border: 3px solid #4a7c59;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
         }
         
         .chat-header {
-            padding: 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            color: white;
-            font-weight: 600;
+            padding: 25px;
+            border-bottom: 3px solid #4a7c59;
+            color: #d4af37;
+            font-weight: 700;
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         
         .chat-messages {
-            height: 350px;
+            height: 380px;
             overflow-y: auto;
-            padding: 20px;
+            padding: 25px;
             color: white;
         }
         
         .chat-message {
-            margin-bottom: 15px;
-            padding: 10px 15px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
+            margin-bottom: 20px;
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #2d5a3d, #1a4d3a);
+            border-radius: 20px;
+            border: 2px solid #4a7c59;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
         
         .chat-message .sender {
-            font-weight: 600;
-            color: #3b82f6;
-            margin-bottom: 5px;
+            font-weight: 700;
+            color: #d4af37;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .chat-input {
@@ -393,21 +431,29 @@ $videoSDKConfig = getVideoSDKConfig($meetingId, $user['full_name'], $user['id'])
             bottom: 0;
             left: 0;
             right: 0;
-            padding: 20px;
+            padding: 25px;
         }
         
         .chat-input input {
             width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 25px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
+            padding: 18px 25px;
+            border: 3px solid #4a7c59;
+            border-radius: 30px;
+            background: linear-gradient(135deg, #1a3d2e, #2d5a3d);
+            color: #d4af37;
             outline: none;
+            font-weight: 600;
+            font-size: 16px;
         }
         
         .chat-input input::placeholder {
-            color: rgba(255, 255, 255, 0.6);
+            color: rgba(212, 175, 55, 0.6);
+            font-weight: 600;
+        }
+        
+        .chat-input input:focus {
+            border-color: #d4af37;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
         }
         
         .recording-indicator {
@@ -415,13 +461,18 @@ $videoSDKConfig = getVideoSDKConfig($meetingId, $user['full_name'], $user['id'])
             top: 80px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(239, 68, 68, 0.9);
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
             color: white;
-            padding: 10px 20px;
-            border-radius: 20px;
+            padding: 15px 30px;
+            border-radius: 30px;
             z-index: 1000;
-            backdrop-filter: blur(20px);
+            backdrop-filter: blur(25px);
             display: none;
+            border: 3px solid #ef4444;
+            box-shadow: 0 10px 30px rgba(220, 38, 38, 0.4);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         
         .recording-indicator.active {
@@ -430,18 +481,19 @@ $videoSDKConfig = getVideoSDKConfig($meetingId, $user['full_name'], $user['id'])
         
         .recording-indicator .pulse {
             display: inline-block;
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             background: white;
             border-radius: 50%;
-            margin-right: 10px;
+            margin-right: 15px;
             animation: pulse 1s infinite;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
         }
         
         @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
         }
     </style>
 </head>

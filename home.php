@@ -26,7 +26,7 @@ $user = getCurrentUser();
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1a4d3a 0%, #2d5a3d 50%, #1a3d2e 100%);
             min-height: 100vh;
         }
         
@@ -77,68 +77,83 @@ $user = getCurrentUser();
         }
         
         .logo {
-            font-size: 28px;
+            font-size: 32px;
             font-weight: 800;
-            color: white;
+            color: #d4af37;
             text-decoration: none;
+            text-shadow: 0 2px 10px rgba(212, 175, 55, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
         
         .user-info {
             display: flex;
             align-items: center;
             gap: 20px;
-            color: white;
+            color: #d4af37;
         }
         
         .user-avatar {
-            width: 40px;
-            height: 40px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            background: linear-gradient(135deg, #d4af37, #b8941f);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 600;
-            color: white;
+            font-weight: 700;
+            color: #1a3d2e;
+            border: 3px solid #4a7c59;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
         
         .logout-btn {
-            background: rgba(255, 255, 255, 0.2);
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
             color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 25px;
+            border: 3px solid #ef4444;
+            padding: 12px 25px;
+            border-radius: 30px;
             cursor: pointer;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(15px);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 5px 15px rgba(220, 38, 38, 0.3);
         }
         
         .logout-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 10px 25px rgba(220, 38, 38, 0.4);
         }
         
         .main-content {
             text-align: center;
-            color: white;
+            color: #d4af37;
         }
         
         .hero-title {
-            font-size: 4rem;
+            font-size: 4.5rem;
             font-weight: 800;
-            margin-bottom: 20px;
-            background: linear-gradient(135deg, #ffffff, #e0e7ff);
+            margin-bottom: 25px;
+            background: linear-gradient(135deg, #d4af37, #b8941f, #ffffff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             line-height: 1.2;
+            text-shadow: 0 4px 20px rgba(212, 175, 55, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
         
         .hero-subtitle {
-            font-size: 1.5rem;
-            margin-bottom: 50px;
+            font-size: 1.6rem;
+            margin-bottom: 60px;
             opacity: 0.9;
-            font-weight: 300;
+            font-weight: 400;
+            color: #ffffff;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
         
         .meeting-actions {
@@ -149,15 +164,16 @@ $user = getCurrentUser();
         }
         
         .action-card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            padding: 40px;
+            background: linear-gradient(135deg, #1a3d2e, #2d5a3d);
+            backdrop-filter: blur(25px);
+            border-radius: 25px;
+            padding: 45px;
             text-align: center;
-            transition: all 0.3s ease;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 3px solid #4a7c59;
             position: relative;
             overflow: hidden;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
         }
         
         .action-card::before {
@@ -167,9 +183,9 @@ $user = getCurrentUser();
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1));
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.4s ease;
         }
         
         .action-card:hover::before {
@@ -177,86 +193,104 @@ $user = getCurrentUser();
         }
         
         .action-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            transform: translateY(-15px) scale(1.02);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+            border-color: #d4af37;
         }
         
         .action-icon {
-            width: 80px;
-            height: 80px;
+            width: 90px;
+            height: 90px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 32px;
-            margin: 0 auto 20px;
+            font-size: 36px;
+            margin: 0 auto 25px;
             position: relative;
             z-index: 10;
+            border: 4px solid #4a7c59;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
         
         .action-icon.start {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            background: linear-gradient(135deg, #d4af37, #b8941f);
+            color: #1a3d2e;
         }
         
         .action-icon.join {
-            background: linear-gradient(135deg, #10b981, #059669);
+            background: linear-gradient(135deg, #2d5a3d, #1a4d3a);
+            color: #d4af37;
         }
         
         .action-icon.admin {
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            color: white;
         }
         
         .action-title {
-            font-size: 24px;
+            font-size: 26px;
             font-weight: 700;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             position: relative;
             z-index: 10;
+            color: #d4af37;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         
         .action-description {
-            font-size: 16px;
-            opacity: 0.8;
-            margin-bottom: 25px;
-            line-height: 1.6;
+            font-size: 17px;
+            opacity: 0.9;
+            margin-bottom: 30px;
+            line-height: 1.7;
             position: relative;
             z-index: 10;
+            color: #ffffff;
         }
         
         .action-btn {
-            background: linear-gradient(135deg, #ffffff, #f8fafc);
-            color: #1f2937;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 25px;
-            font-size: 16px;
-            font-weight: 600;
+            background: linear-gradient(135deg, #d4af37, #b8941f);
+            color: #1a3d2e;
+            border: 3px solid #4a7c59;
+            padding: 18px 35px;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             text-decoration: none;
             display: inline-block;
             position: relative;
             z-index: 10;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
         }
         
         .action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 15px 35px rgba(212, 175, 55, 0.4);
+            background: linear-gradient(135deg, #b8941f, #d4af37);
         }
         
         .meeting-form {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            padding: 40px;
-            margin-top: 50px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: linear-gradient(135deg, #1a3d2e, #2d5a3d);
+            backdrop-filter: blur(25px);
+            border-radius: 25px;
+            padding: 45px;
+            margin-top: 60px;
+            border: 3px solid #4a7c59;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
         }
         
         .form-title {
-            font-size: 28px;
+            font-size: 30px;
             font-weight: 700;
-            margin-bottom: 30px;
+            margin-bottom: 35px;
+            color: #d4af37;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         
         .form-group {
@@ -267,35 +301,46 @@ $user = getCurrentUser();
         
         .form-input {
             flex: 1;
-            padding: 15px 20px;
-            border: none;
-            border-radius: 25px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            font-size: 16px;
+            padding: 18px 25px;
+            border: 3px solid #4a7c59;
+            border-radius: 30px;
+            background: linear-gradient(135deg, #1a3d2e, #2d5a3d);
+            color: #d4af37;
+            font-size: 18px;
             outline: none;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(15px);
+            font-weight: 600;
         }
         
         .form-input::placeholder {
-            color: rgba(255, 255, 255, 0.7);
+            color: rgba(212, 175, 55, 0.6);
+            font-weight: 600;
+        }
+        
+        .form-input:focus {
+            border-color: #d4af37;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
         }
         
         .form-btn {
-            background: linear-gradient(135deg, #10b981, #059669);
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
             color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 25px;
-            font-size: 16px;
-            font-weight: 600;
+            border: 3px solid #ef4444;
+            padding: 18px 35px;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 8px 25px rgba(220, 38, 38, 0.3);
         }
         
         .form-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 15px 35px rgba(220, 38, 38, 0.4);
+            background: linear-gradient(135deg, #ef4444, #dc2626);
         }
         
         .features {
@@ -307,25 +352,41 @@ $user = getCurrentUser();
         
         .feature-item {
             text-align: center;
-            color: white;
+            color: #d4af37;
+            padding: 30px;
+            background: linear-gradient(135deg, #1a3d2e, #2d5a3d);
+            border-radius: 20px;
+            border: 2px solid #4a7c59;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .feature-item:hover {
+            transform: translateY(-10px);
+            border-color: #d4af37;
+            box-shadow: 0 20px 40px rgba(212, 175, 55, 0.2);
         }
         
         .feature-icon {
-            font-size: 48px;
-            margin-bottom: 20px;
-            opacity: 0.8;
+            font-size: 52px;
+            margin-bottom: 25px;
+            color: #d4af37;
+            text-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
         }
         
         .feature-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 10px;
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         
         .feature-description {
-            font-size: 14px;
-            opacity: 0.7;
-            line-height: 1.6;
+            font-size: 16px;
+            opacity: 0.9;
+            line-height: 1.7;
+            color: #ffffff;
         }
         
         @media (max-width: 768px) {
@@ -389,7 +450,7 @@ $user = getCurrentUser();
                         </div>
                         <h3 class="action-title">Join Meeting</h3>
                         <p class="action-description">Enter a meeting ID to join an existing video conference. Quick and easy access to any meeting.</p>
-                        <a href="videosdk-meeting.php?room=demo_meeting" class="action-btn">
+                        <a href="simple-videosdk-test.php?room=demo_meeting" class="action-btn">
                             <i class="fas fa-sign-in-alt"></i> Join Demo
                         </a>
                     </div>
