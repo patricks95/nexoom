@@ -203,7 +203,7 @@ $participantName = isset($_GET['name']) ? $_GET['name'] : '';
         <div class="error-message" id="errorMessage"></div>
         <div class="success-message" id="successMessage"></div>
         
-        <form id="meetingForm" method="GET" action="videosdk-proper.php">
+        <form id="meetingForm" method="GET" action="videosdk-fixed.php">
             <div class="form-group">
                 <label class="form-label" for="meetingId">Meeting ID</label>
                 <input 
