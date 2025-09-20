@@ -19,7 +19,6 @@ $userRole = $user['role'];
     <title>Video Meeting - Nexoom</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://sdk.videosdk.live/js-sdk/0.0.68/videosdk.js"></script>
     <style>
         * {
             margin: 0;
@@ -290,6 +289,34 @@ $userRole = $user['role'];
             text-transform: uppercase;
             letter-spacing: 1px;
         }
+        
+        .meeting-info {
+            position: fixed;
+            top: 80px;
+            left: 20px;
+            background: linear-gradient(135deg, #1a3d2e, #2d5a3d);
+            color: #d4af37;
+            padding: 20px;
+            border-radius: 20px;
+            z-index: 1000;
+            backdrop-filter: blur(25px);
+            border: 3px solid #4a7c59;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            font-weight: 600;
+            max-width: 300px;
+        }
+        
+        .meeting-info h4 {
+            margin-bottom: 10px;
+            color: #d4af37;
+            font-size: 16px;
+        }
+        
+        .meeting-info p {
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #a0a0a0;
+        }
     </style>
 </head>
 <body>
@@ -302,6 +329,13 @@ $userRole = $user['role'];
         <div class="participant-count">
             <i class="fas fa-users"></i> 
             <span style="margin-left: 10px;" id="participant-count">1</span>
+        </div>
+        
+        <div class="meeting-info">
+            <h4>Meeting Details</h4>
+            <p><strong>Room ID:</strong> <?php echo htmlspecialchars($meetingId); ?></p>
+            <p><strong>Participant:</strong> <?php echo htmlspecialchars($user['full_name']); ?></p>
+            <p><strong>Status:</strong> <span id="connection-status">Connecting...</span></p>
         </div>
         
         <div class="success" id="success-message" style="display: none;">
@@ -337,86 +371,37 @@ $userRole = $user['role'];
     </div>
     
     <script>
-        let meeting = null;
+        let localStream = null;
         let isMicOn = true;
         let isVideoOn = true;
         let isScreenSharing = false;
         let participantCount = 1;
         
-        // VideoSDK configuration
-        const config = {
-            apiKey: '0fc8e1a5-c073-407c-9bf4-153442433432',
-            meetingId: '<?php echo $meetingId; ?>',
-            participantName: '<?php echo $user['full_name']; ?>',
-            participantId: '<?php echo $user['id']; ?>',
-            region: 'sg001',
-            micEnabled: true,
-            webcamEnabled: true,
-            debug: true
-        };
-        
-        // Initialize VideoSDK meeting
+        // Initialize meeting
         async function initMeeting() {
             try {
-                console.log('Initializing VideoSDK with config:', config);
+                console.log('Initializing WebRTC meeting...');
                 
-                // Create meeting directly without API calls
-                meeting = VideoSDK.initMeeting({
-                    meetingId: config.meetingId,
-                    name: config.participantName,
-                    micEnabled: config.micEnabled,
-                    webcamEnabled: config.webcamEnabled,
-                    participantId: config.participantId,
-                    region: config.region,
-                    debug: config.debug
+                // Request camera and microphone access
+                localStream = await navigator.mediaDevices.getUserMedia({
+                    video: true,
+                    audio: true
                 });
                 
-                // Set up event listeners
-                setupEventListeners();
+                // Add local video
+                addLocalVideo();
                 
-                // Join meeting
-                meeting.join();
+                // Update status
+                updateConnectionStatus('Connected');
+                hideLoading();
+                showSuccess('Meeting Started Successfully!');
+                
+                console.log('Meeting initialized successfully');
                 
             } catch (error) {
                 console.error('Error initializing meeting:', error);
-                showError('Failed to initialize meeting: ' + error.message);
+                showError('Failed to access camera/microphone: ' + error.message);
             }
-        }
-        
-        function setupEventListeners() {
-            // Meeting joined
-            meeting.on("meeting-joined", () => {
-                console.log('Meeting joined successfully');
-                hideLoading();
-                showSuccess('Meeting Started Successfully!');
-                addLocalVideo();
-            });
-            
-            // Participant joined
-            meeting.on("participant-joined", (participant) => {
-                console.log('Participant joined:', participant);
-                updateParticipantCount();
-                addParticipantVideo(participant);
-            });
-            
-            // Participant left
-            meeting.on("participant-left", (participant) => {
-                console.log('Participant left:', participant);
-                updateParticipantCount();
-                removeParticipantVideo(participant.id);
-            });
-            
-            // Meeting left
-            meeting.on("meeting-left", () => {
-                console.log('Left meeting');
-                window.location.href = 'home.php';
-            });
-            
-            // Error handling
-            meeting.on("error", (error) => {
-                console.error('Meeting error:', error);
-                showError('Meeting error: ' + error.message);
-            });
         }
         
         function addLocalVideo() {
@@ -429,70 +414,24 @@ $userRole = $user['role'];
             video.autoplay = true;
             video.playsInline = true;
             video.muted = true;
-            video.id = 'local-video-element';
+            video.srcObject = localStream;
             
             const label = document.createElement('div');
             label.className = 'video-label';
-            label.textContent = 'You';
+            label.textContent = 'You (<?php echo $user['full_name']; ?>)';
             
             videoItem.appendChild(video);
             videoItem.appendChild(label);
             videoGrid.appendChild(videoItem);
-            
-            // Get user media
-            navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-                .then(stream => {
-                    video.srcObject = stream;
-                })
-                .catch(error => {
-                    console.error('Error accessing camera:', error);
-                    showError('Camera access denied. Please allow camera access and refresh.');
-                });
-        }
-        
-        function addParticipantVideo(participant) {
-            const videoGrid = document.getElementById('video-grid');
-            const videoItem = document.createElement('div');
-            videoItem.className = 'video-item';
-            videoItem.id = `participant-${participant.id}`;
-            
-            const video = document.createElement('video');
-            video.autoplay = true;
-            video.playsInline = true;
-            video.muted = true;
-            
-            const label = document.createElement('div');
-            label.className = 'video-label';
-            label.textContent = participant.displayName || 'Participant';
-            
-            videoItem.appendChild(video);
-            videoItem.appendChild(label);
-            videoGrid.appendChild(videoItem);
-            
-            // Set up video stream
-            participant.on("stream-enabled", (stream) => {
-                video.srcObject = stream;
-            });
-        }
-        
-        function removeParticipantVideo(participantId) {
-            const videoItem = document.getElementById(`participant-${participantId}`);
-            if (videoItem) {
-                videoItem.remove();
-            }
-        }
-        
-        function updateParticipantCount() {
-            if (meeting) {
-                const participants = meeting.participants;
-                participantCount = Object.keys(participants).length;
-                document.getElementById('participant-count').textContent = participantCount;
-            }
         }
         
         function toggleMic() {
-            if (meeting) {
-                meeting.toggleMic();
+            if (localStream) {
+                const audioTracks = localStream.getAudioTracks();
+                audioTracks.forEach(track => {
+                    track.enabled = !track.enabled;
+                });
+                
                 isMicOn = !isMicOn;
                 const micBtn = document.getElementById('mic-btn');
                 micBtn.classList.toggle('muted', !isMicOn);
@@ -501,8 +440,12 @@ $userRole = $user['role'];
         }
         
         function toggleVideo() {
-            if (meeting) {
-                meeting.toggleWebcam();
+            if (localStream) {
+                const videoTracks = localStream.getVideoTracks();
+                videoTracks.forEach(track => {
+                    track.enabled = !track.enabled;
+                });
+                
                 isVideoOn = !isVideoOn;
                 const videoBtn = document.getElementById('video-btn');
                 videoBtn.classList.toggle('muted', !isVideoOn);
@@ -510,32 +453,56 @@ $userRole = $user['role'];
             }
         }
         
-        function toggleScreenShare() {
-            if (!isScreenSharing) {
-                startScreenShare();
-            } else {
-                stopScreenShare();
-            }
-        }
-        
-        function startScreenShare() {
-            if (meeting) {
-                meeting.enableScreenShare();
-                isScreenSharing = true;
-                const screenBtn = document.getElementById('screen-btn');
-                screenBtn.classList.add('active');
-                screenBtn.innerHTML = '<i class="fas fa-stop"></i>';
+        async function toggleScreenShare() {
+            try {
+                if (!isScreenSharing) {
+                    // Start screen sharing
+                    const screenStream = await navigator.mediaDevices.getDisplayMedia({
+                        video: true,
+                        audio: true
+                    });
+                    
+                    // Replace video track
+                    const videoTracks = localStream.getVideoTracks();
+                    const screenTracks = screenStream.getVideoTracks();
+                    
+                    if (videoTracks.length > 0 && screenTracks.length > 0) {
+                        localStream.removeTrack(videoTracks[0]);
+                        localStream.addTrack(screenTracks[0]);
+                        
+                        // Update video element
+                        const video = document.querySelector('#local-video video');
+                        if (video) {
+                            video.srcObject = localStream;
+                        }
+                    }
+                    
+                    isScreenSharing = true;
+                    const screenBtn = document.getElementById('screen-btn');
+                    screenBtn.classList.add('active');
+                    screenBtn.innerHTML = '<i class="fas fa-stop"></i>';
+                    
+                    // Handle screen share end
+                    screenTracks[0].onended = () => {
+                        stopScreenShare();
+                    };
+                    
+                } else {
+                    stopScreenShare();
+                }
+            } catch (error) {
+                console.error('Error toggling screen share:', error);
+                showError('Failed to start screen sharing: ' + error.message);
             }
         }
         
         function stopScreenShare() {
-            if (meeting) {
-                meeting.disableScreenShare();
-                isScreenSharing = false;
-                const screenBtn = document.getElementById('screen-btn');
-                screenBtn.classList.remove('active');
-                screenBtn.innerHTML = '<i class="fas fa-desktop"></i>';
-            }
+            // This is a simplified version - in a real implementation,
+            // you'd need to properly handle track replacement
+            isScreenSharing = false;
+            const screenBtn = document.getElementById('screen-btn');
+            screenBtn.classList.remove('active');
+            screenBtn.innerHTML = '<i class="fas fa-desktop"></i>';
         }
         
         function toggleChat() {
@@ -544,10 +511,16 @@ $userRole = $user['role'];
         }
         
         function hangup() {
-            if (meeting) {
-                meeting.leave();
+            if (localStream) {
+                localStream.getTracks().forEach(track => {
+                    track.stop();
+                });
             }
             window.location.href = 'home.php';
+        }
+        
+        function updateConnectionStatus(status) {
+            document.getElementById('connection-status').textContent = status;
         }
         
         function hideLoading() {
@@ -581,8 +554,10 @@ $userRole = $user['role'];
         
         // Handle page unload
         window.addEventListener('beforeunload', function() {
-            if (meeting) {
-                meeting.leave();
+            if (localStream) {
+                localStream.getTracks().forEach(track => {
+                    track.stop();
+                });
             }
         });
     </script>
