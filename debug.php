@@ -52,7 +52,7 @@ $urlParams = [
 ];
 
 // Build URL with parameters
-$videoSDKUrl = 'https://meet.videosdk.live/?' . http_build_query($urlParams);
+$videoSDKUrl = 'https://videosdk.live/?' . http_build_query($urlParams);
 
 echo "\nGenerated VideoSDK URL:\n";
 echo $videoSDKUrl . "\n";

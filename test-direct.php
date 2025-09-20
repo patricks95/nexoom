@@ -7,7 +7,7 @@ $participantName = isset($_GET['name']) ? $_GET['name'] : 'Test User';
 $token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlrZXkiOiI3MzY0ODk5My1iZWZkLTQwYzMtYmE3MS01NmEzZDFlNmUzMDQiLCJwZXJtaXNzaW9ucyI6WyJhbGxvd19qb2luIl0sImlhdCI6MTc1ODM0OTQ1NSwiZXhwIjoxNzg5ODg1NDU1fQ.6iIQeg2rABa0Mp3gfUxqsSxd6J8GBuyQ6tP7msoPuJU';
 
 // Build VideoSDK URL
-$videoSDKUrl = 'https://meet.videosdk.live/?' . http_build_query([
+$videoSDKUrl = 'https://videosdk.live/?' . http_build_query([
     'token' => $token,
     'meetingId' => $meetingId,
     'name' => $participantName,

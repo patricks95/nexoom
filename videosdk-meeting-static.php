@@ -44,7 +44,7 @@ $urlParams = [
 ];
 
 // Build URL with parameters
-$videoSDKUrl = 'https://meet.videosdk.live/?' . http_build_query($urlParams);
+$videoSDKUrl = 'https://videosdk.live/?' . http_build_query($urlParams);
 
 // Output the URL as a JavaScript variable
 echo '<script>var meetingUrl = "' . addslashes($videoSDKUrl) . '";</script>';

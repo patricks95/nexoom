@@ -1,38 +1,10 @@
 <?php
-// Simple VideoSDK meeting page with minimal parameters
+// VideoSDK React Prebuilt UI implementation
 $meetingId = isset($_GET['meetingId']) ? $_GET['meetingId'] : 'meeting_' . uniqid();
 $participantName = isset($_GET['name']) ? $_GET['name'] : 'Participant';
 
 // Use the provided token directly
 $token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlrZXkiOiI3MzY0ODk5My1iZWZkLTQwYzMtYmE3MS01NmEzZDFlNmUzMDQiLCJwZXJtaXNzaW9ucyI6WyJhbGxvd19qb2luIl0sImlhdCI6MTc1ODM0OTQ1NSwiZXhwIjoxNzg5ODg1NDU1fQ.6iIQeg2rABa0Mp3gfUxqsSxd6J8GBuyQ6tP7msoPuJU';
-
-// Build VideoSDK URL with minimal required parameters
-$videoSDKUrl = 'https://videosdk.live/?' . http_build_query([
-    'token' => $token,
-    'meetingId' => $meetingId,
-    'name' => $participantName,
-    'micEnabled' => 'true',
-    'webcamEnabled' => 'true',
-    'chatEnabled' => 'true',
-    'screenShareEnabled' => 'true',
-    'recordingEnabled' => 'false',
-    'liveStreamEnabled' => 'false',
-    'whiteboardEnabled' => 'false',
-    'raiseHandEnabled' => 'false',
-    'participantCanToggleSelfWebcam' => 'true',
-    'participantCanToggleSelfMic' => 'true',
-    'participantCanLeave' => 'true',
-    'participantCanEndMeeting' => 'false',
-    'joinScreenEnabled' => 'true',
-    'joinScreenTitle' => 'Nexoom Video Meeting',
-    'brandingEnabled' => 'false',
-    'brandName' => 'Nexoom',
-    'poweredBy' => 'false',
-    'redirectOnLeave' => 'index.php',
-    'layoutType' => 'GRID',
-    'maxResolution' => 'hd',
-    'debug' => 'true'
-]);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -149,34 +121,10 @@ $videoSDKUrl = 'https://videosdk.live/?' . http_build_query([
             transform: translateY(-3px);
             box-shadow: 0 15px 35px rgba(212, 175, 55, 0.4);
         }
-        
-        .debug-info {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.8);
-            color: #00ff00;
-            padding: 10px;
-            border-radius: 5px;
-            font-family: monospace;
-            font-size: 12px;
-            z-index: 10000;
-            max-width: 300px;
-            word-break: break-all;
-        }
     </style>
 </head>
 <body>
     <div class="meeting-container">
-        <!-- Debug Info -->
-        <div class="debug-info" id="debugInfo">
-            <strong>Debug Info:</strong><br>
-            Meeting ID: <?php echo htmlspecialchars($meetingId); ?><br>
-            Name: <?php echo htmlspecialchars($participantName); ?><br>
-            Token: <?php echo substr($token, 0, 20); ?>...<br>
-            <a href="<?php echo htmlspecialchars($videoSDKUrl); ?>" target="_blank" style="color: #00ff00;">Open Direct Link</a>
-        </div>
-        
         <!-- Loading Screen -->
         <div class="loading-screen" id="loadingScreen">
             <div class="loading-spinner"></div>
@@ -204,7 +152,7 @@ $videoSDKUrl = 'https://videosdk.live/?' . http_build_query([
         <iframe 
             id="meetingIframe"
             class="meeting-iframe"
-            src="<?php echo $videoSDKUrl; ?>"
+            src="https://videosdk.live/?token=<?php echo $token; ?>&meetingId=<?php echo $meetingId; ?>&name=<?php echo urlencode($participantName); ?>&micEnabled=true&webcamEnabled=true&chatEnabled=true&screenShareEnabled=true&recordingEnabled=false&liveStreamEnabled=false&whiteboardEnabled=false&raiseHandEnabled=false&participantCanToggleSelfWebcam=true&participantCanToggleSelfMic=true&participantCanLeave=true&participantCanEndMeeting=false&joinScreenEnabled=true&joinScreenTitle=Nexoom+Video+Meeting&brandingEnabled=false&brandName=Nexoom&poweredBy=false&redirectOnLeave=index.php&layoutType=GRID&maxResolution=hd&debug=true"
             allow="camera; microphone; display-capture; autoplay"
             allowfullscreen
             style="display: none;"
@@ -215,7 +163,6 @@ $videoSDKUrl = 'https://videosdk.live/?' . http_build_query([
         let meetingIframe = null;
         let loadingScreen = null;
         let errorScreen = null;
-        let meetingUrl = '<?php echo $videoSDKUrl; ?>';
         
         // Initialize when page loads
         window.addEventListener('load', function() {
@@ -230,7 +177,8 @@ $videoSDKUrl = 'https://videosdk.live/?' . http_build_query([
         function startMeeting() {
             try {
                 console.log('Starting VideoSDK meeting...');
-                console.log('Meeting URL:', meetingUrl);
+                console.log('Meeting ID:', '<?php echo $meetingId; ?>');
+                console.log('Participant Name:', '<?php echo $participantName; ?>');
                 
                 // Show loading screen
                 loadingScreen.style.display = 'flex';
@@ -256,7 +204,7 @@ $videoSDKUrl = 'https://videosdk.live/?' . http_build_query([
                     if (loadingScreen.style.display !== 'none') {
                         showError('Meeting is taking too long to load. Please try again.');
                     }
-                }, 15000); // Increased timeout to 15 seconds
+                }, 15000);
                 
             } catch (error) {
                 console.error('Error starting meeting:', error);
@@ -286,7 +234,7 @@ $videoSDKUrl = 'https://videosdk.live/?' . http_build_query([
             
             // Reload the iframe
             setTimeout(function() {
-                meetingIframe.src = meetingUrl;
+                meetingIframe.src = meetingIframe.src;
                 meetingIframe.style.display = 'block';
             }, 1000);
         }
