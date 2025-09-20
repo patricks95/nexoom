@@ -178,7 +178,6 @@ $token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlrZXkiOiI3MzY0ODk5My1iZWZkL
             src="https://videosdk.live/?token=<?php echo $token; ?>&meetingId=<?php echo $meetingId; ?>&name=<?php echo urlencode($participantName); ?>&micEnabled=true&webcamEnabled=true&chatEnabled=true&screenShareEnabled=true&recordingEnabled=false&liveStreamEnabled=false&whiteboardEnabled=false&raiseHandEnabled=false&participantCanToggleSelfWebcam=true&participantCanToggleSelfMic=true&participantCanLeave=true&participantCanEndMeeting=false&joinScreenEnabled=false&brandingEnabled=false&brandName=Nexoom&poweredBy=false&redirectOnLeave=index.php&layoutType=GRID&maxResolution=hd&debug=false"
             allow="camera; microphone; display-capture; autoplay"
             allowfullscreen
-            sandbox="allow-same-origin allow-scripts allow-camera allow-microphone allow-display-capture allow-forms allow-popups allow-popups-to-escape-sandbox"
             style="display: none;"
         ></iframe>
     </div>

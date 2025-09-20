@@ -176,7 +176,6 @@ $videoSDKUrl = 'https://videosdk.live/?' . http_build_query([
                 src="<?php echo htmlspecialchars($videoSDKUrl); ?>"
                 allow="camera; microphone; display-capture; autoplay"
                 allowfullscreen
-                sandbox="allow-same-origin allow-scripts allow-camera allow-microphone allow-display-capture allow-forms allow-popups allow-popups-to-escape-sandbox"
             ></iframe>
         </div>
     </div>
