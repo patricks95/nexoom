@@ -24,6 +24,15 @@ switch ($action) {
     case 'ice-candidate':
         handleIceCandidate();
         break;
+    case 'get-offer':
+        handleGetOffer();
+        break;
+    case 'get-answer':
+        handleGetAnswer();
+        break;
+    case 'get-ice-candidates':
+        handleGetIceCandidates();
+        break;
     case 'leave':
         handleLeave();
         break;
@@ -87,7 +96,7 @@ function handleOffer() {
         'timestamp' => time()
     ];
     
-    echo json_encode(['success' => true]);
+    echo json_encode(['success' => true, 'offer' => $offer]);
 }
 
 function handleAnswer() {
@@ -113,7 +122,7 @@ function handleAnswer() {
         'timestamp' => time()
     ];
     
-    echo json_encode(['success' => true]);
+    echo json_encode(['success' => true, 'answer' => $answer]);
 }
 
 function handleIceCandidate() {
@@ -143,7 +152,65 @@ function handleIceCandidate() {
         'timestamp' => time()
     ];
     
-    echo json_encode(['success' => true]);
+    echo json_encode(['success' => true, 'candidates' => $_SESSION['ice_candidates'][$to]]);
+}
+
+function handleGetOffer() {
+    $roomId = $_GET['room'] ?? '';
+    $from = $_GET['from'] ?? '';
+    $to = $_GET['to'] ?? '';
+    
+    if (empty($roomId) || empty($from) || empty($to)) {
+        echo json_encode(['error' => 'Missing parameters']);
+        return;
+    }
+    
+    session_start();
+    if (isset($_SESSION['offers'][$to]) && $_SESSION['offers'][$to]['from'] === $from) {
+        echo json_encode(['success' => true, 'offer' => $_SESSION['offers'][$to]['offer']]);
+        unset($_SESSION['offers'][$to]); // Remove after reading
+    } else {
+        echo json_encode(['success' => false, 'offer' => null]);
+    }
+}
+
+function handleGetAnswer() {
+    $roomId = $_GET['room'] ?? '';
+    $from = $_GET['from'] ?? '';
+    $to = $_GET['to'] ?? '';
+    
+    if (empty($roomId) || empty($from) || empty($to)) {
+        echo json_encode(['error' => 'Missing parameters']);
+        return;
+    }
+    
+    session_start();
+    if (isset($_SESSION['answers'][$to]) && $_SESSION['answers'][$to]['from'] === $from) {
+        echo json_encode(['success' => true, 'answer' => $_SESSION['answers'][$to]['answer']]);
+        unset($_SESSION['answers'][$to]); // Remove after reading
+    } else {
+        echo json_encode(['success' => false, 'answer' => null]);
+    }
+}
+
+function handleGetIceCandidates() {
+    $roomId = $_GET['room'] ?? '';
+    $from = $_GET['from'] ?? '';
+    $to = $_GET['to'] ?? '';
+    
+    if (empty($roomId) || empty($from) || empty($to)) {
+        echo json_encode(['error' => 'Missing parameters']);
+        return;
+    }
+    
+    session_start();
+    if (isset($_SESSION['ice_candidates'][$to])) {
+        $candidates = $_SESSION['ice_candidates'][$to];
+        echo json_encode(['success' => true, 'candidates' => $candidates]);
+        unset($_SESSION['ice_candidates'][$to]); // Remove after reading
+    } else {
+        echo json_encode(['success' => false, 'candidates' => []]);
+    }
 }
 
 function handleLeave() {

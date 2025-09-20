@@ -1,0 +1,972 @@
+<?php
+require_once 'includes/auth.php';
+
+// Redirect to login if not logged in
+if (!isLoggedIn()) {
+    header('Location: login.php');
+    exit();
+}
+
+$user = getCurrentUser();
+$meetingId = isset($_GET['room']) ? $_GET['room'] : 'meeting_' . uniqid();
+$userRole = $user['role'];
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Meeting - Nexoom</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a4d3a 0%, #2d5a3d 50%, #1a3d2e 100%);
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .meeting-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background: #000;
+        }
+        
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 10px;
+            padding: 10px;
+            height: calc(100vh - 80px);
+        }
+        
+        .video-item {
+            position: relative;
+            background: linear-gradient(135deg, #1a3d2e, #2d5a3d);
+            border-radius: 20px;
+            overflow: hidden;
+            min-height: 200px;
+            border: 3px solid #4a7c59;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .video-item:hover {
+            border-color: #d4af37;
+            transform: scale(1.05) translateY(-5px);
+            box-shadow: 0 20px 40px rgba(212, 175, 55, 0.3);
+        }
+        
+        .video-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .video-label {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: linear-gradient(135deg, #1a3d2e, #2d5a3d);
+            color: #d4af37;
+            padding: 10px 18px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 700;
+            z-index: 10;
+            backdrop-filter: blur(15px);
+            border: 2px solid #4a7c59;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #1a3d2e, #2d5a3d);
+            padding: 25px 50px;
+            border-radius: 60px;
+            display: flex;
+            gap: 25px;
+            z-index: 1000;
+            backdrop-filter: blur(25px);
+            border: 3px solid #4a7c59;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+        }
+        
+        .control-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 3px solid #4a7c59;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(135deg, #2d5a3d, #1a4d3a);
+            color: #d4af37;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .control-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent, rgba(212, 175, 55, 0.3), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s;
+        }
+        
+        .control-btn:hover::before {
+            transform: translateX(100%);
+        }
+        
+        .control-btn:hover {
+            transform: scale(1.15) translateY(-3px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+        }
+        
+        .control-btn.mic {
+            background: linear-gradient(135deg, #2d5a3d, #1a4d3a);
+            color: #d4af37;
+            border-color: #4a7c59;
+        }
+        
+        .control-btn.mic.muted {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            color: white;
+            border-color: #ef4444;
+        }
+        
+        .control-btn.video {
+            background: linear-gradient(135deg, #2d5a3d, #1a4d3a);
+            color: #d4af37;
+            border-color: #4a7c59;
+        }
+        
+        .control-btn.video.muted {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            color: white;
+            border-color: #ef4444;
+        }
+        
+        .control-btn.screen {
+            background: linear-gradient(135deg, #d4af37, #b8941f);
+            color: #1a3d2e;
+            border-color: #d4af37;
+        }
+        
+        .control-btn.screen.active {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            color: white;
+            border-color: #ef4444;
+        }
+        
+        .control-btn.chat {
+            background: linear-gradient(135deg, #d4af37, #b8941f);
+            color: #1a3d2e;
+            border-color: #d4af37;
+        }
+        
+        .control-btn.hangup {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            color: white;
+            border-color: #ef4444;
+        }
+        
+        .status-bar {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(135deg, #1a3d2e, #2d5a3d);
+            color: #d4af37;
+            padding: 18px 30px;
+            border-radius: 30px;
+            z-index: 1000;
+            backdrop-filter: blur(25px);
+            border: 3px solid #4a7c59;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .participant-count {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #1a3d2e, #2d5a3d);
+            color: #d4af37;
+            padding: 18px 30px;
+            border-radius: 30px;
+            z-index: 1000;
+            backdrop-filter: blur(25px);
+            border: 3px solid #4a7c59;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #d4af37;
+            font-size: 22px;
+            z-index: 999;
+            text-align: center;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(212, 175, 55, 0.3);
+            border-top: 5px solid #d4af37;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 25px;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #1a3d2e, #2d5a3d);
+            color: #dc2626;
+            padding: 50px;
+            border-radius: 25px;
+            text-align: center;
+            z-index: 1001;
+            backdrop-filter: blur(25px);
+            border: 3px solid #dc2626;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+        
+        .success {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #2d5a3d, #1a4d3a);
+            color: #d4af37;
+            padding: 18px 35px;
+            border-radius: 30px;
+            z-index: 1000;
+            backdrop-filter: blur(25px);
+            border: 3px solid #4a7c59;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .meeting-info {
+            position: fixed;
+            top: 80px;
+            left: 20px;
+            background: linear-gradient(135deg, #1a3d2e, #2d5a3d);
+            color: #d4af37;
+            padding: 20px;
+            border-radius: 20px;
+            z-index: 1000;
+            backdrop-filter: blur(25px);
+            border: 3px solid #4a7c59;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            font-weight: 600;
+            max-width: 300px;
+        }
+        
+        .meeting-info h4 {
+            margin-bottom: 10px;
+            color: #d4af37;
+            font-size: 16px;
+        }
+        
+        .meeting-info p {
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #a0a0a0;
+        }
+        
+        .invite-section {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: linear-gradient(135deg, #1a3d2e, #2d5a3d);
+            color: #d4af37;
+            padding: 20px;
+            border-radius: 20px;
+            z-index: 1000;
+            backdrop-filter: blur(25px);
+            border: 3px solid #4a7c59;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            font-weight: 600;
+            max-width: 300px;
+        }
+        
+        .invite-section h4 {
+            margin-bottom: 10px;
+            color: #d4af37;
+            font-size: 16px;
+        }
+        
+        .invite-link {
+            background: linear-gradient(135deg, #2d5a3d, #1a4d3a);
+            color: #d4af37;
+            padding: 10px;
+            border-radius: 10px;
+            border: 2px solid #4a7c59;
+            font-size: 12px;
+            word-break: break-all;
+            margin-bottom: 10px;
+        }
+        
+        .copy-btn {
+            background: linear-gradient(135deg, #d4af37, #b8941f);
+            color: #1a3d2e;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="meeting-container">
+        <div class="status-bar">
+            <i class="fas fa-circle text-green-500"></i> 
+            <span style="margin-left: 10px;">Meeting: <?php echo htmlspecialchars($meetingId); ?></span>
+        </div>
+        
+        <div class="participant-count">
+            <i class="fas fa-users"></i> 
+            <span style="margin-left: 10px;" id="participant-count">1</span>
+        </div>
+        
+        <div class="meeting-info">
+            <h4>Meeting Details</h4>
+            <p><strong>Room ID:</strong> <?php echo htmlspecialchars($meetingId); ?></p>
+            <p><strong>Participant:</strong> <?php echo htmlspecialchars($user['full_name']); ?></p>
+            <p><strong>Status:</strong> <span id="connection-status">Connecting...</span></p>
+        </div>
+        
+        <div class="invite-section">
+            <h4>Invite Others</h4>
+            <div class="invite-link" id="invite-link">
+                <?php echo $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']; ?>
+            </div>
+            <button class="copy-btn" onclick="copyInviteLink()">
+                <i class="fas fa-copy"></i> Copy Link
+            </button>
+        </div>
+        
+        <div class="success" id="success-message" style="display: none;">
+            ✅ Meeting Started Successfully!
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div>Starting video meeting...</div>
+        </div>
+        
+        <div class="video-grid" id="video-grid">
+            <!-- Videos will be added here dynamically -->
+        </div>
+        
+        <div class="controls">
+            <button class="control-btn mic" id="mic-btn" onclick="toggleMic()">
+                <i class="fas fa-microphone"></i>
+            </button>
+            <button class="control-btn video" id="video-btn" onclick="toggleVideo()">
+                <i class="fas fa-video"></i>
+            </button>
+            <button class="control-btn screen" id="screen-btn" onclick="toggleScreenShare()">
+                <i class="fas fa-desktop"></i>
+            </button>
+            <button class="control-btn chat" id="chat-btn" onclick="toggleChat()">
+                <i class="fas fa-comments"></i>
+            </button>
+            <button class="control-btn hangup" id="hangup-btn" onclick="hangup()">
+                <i class="fas fa-phone-slash"></i>
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        let localStream = null;
+        let isMicOn = true;
+        let isVideoOn = true;
+        let isScreenSharing = false;
+        let participantCount = 1;
+        let participants = new Map();
+        let peerConnections = new Map();
+        let participantId = '<?php echo $user['id']; ?>';
+        let meetingId = '<?php echo $meetingId; ?>';
+        let participantName = '<?php echo $user['full_name']; ?>';
+        let isHost = false;
+        let signalingInterval = null;
+        
+        // WebRTC configuration
+        const rtcConfig = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        };
+        
+        // Initialize meeting
+        async function initMeeting() {
+            try {
+                console.log('Initializing WebRTC meeting...');
+                
+                // Request camera and microphone access
+                localStream = await navigator.mediaDevices.getUserMedia({
+                    video: true,
+                    audio: true
+                });
+                
+                // Add local video
+                addLocalVideo();
+                
+                // Join the meeting room
+                await joinMeeting();
+                
+                // Start polling for other participants
+                startPolling();
+                
+                // Update status
+                updateConnectionStatus('Connected');
+                hideLoading();
+                showSuccess('Meeting Started Successfully!');
+                
+                console.log('Meeting initialized successfully');
+                
+            } catch (error) {
+                console.error('Error initializing meeting:', error);
+                showError('Failed to access camera/microphone: ' + error.message);
+            }
+        }
+        
+        async function joinMeeting() {
+            try {
+                const response = await fetch(`webrtc-signaling.php?action=join&room=${meetingId}&participant=${participantId}&name=${encodeURIComponent(participantName)}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    console.log('Joined meeting successfully');
+                    updateParticipantList(data.participants);
+                    
+                    // Check if we're the first participant (host)
+                    const participantList = Object.keys(data.participants);
+                    isHost = participantList.length === 1;
+                    
+                    if (isHost) {
+                        console.log('You are the host of this meeting');
+                    } else {
+                        console.log('You are a participant in this meeting');
+                        // As a participant, try to connect to the host
+                        await connectToHost();
+                    }
+                } else {
+                    console.error('Failed to join meeting:', data.error);
+                }
+            } catch (error) {
+                console.error('Error joining meeting:', error);
+            }
+        }
+        
+        async function connectToHost() {
+            try {
+                // Get list of participants
+                const response = await fetch(`webrtc-signaling.php?action=join&room=${meetingId}&participant=${participantId}&name=${encodeURIComponent(participantName)}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const participantList = Object.keys(data.participants);
+                    const hostId = participantList.find(id => id !== participantId);
+                    
+                    if (hostId) {
+                        console.log('Connecting to host:', hostId);
+                        await createPeerConnection(hostId, true);
+                    }
+                }
+            } catch (error) {
+                console.error('Error connecting to host:', error);
+            }
+        }
+        
+        function startPolling() {
+            // Poll for new participants every 2 seconds
+            signalingInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`webrtc-signaling.php?action=join&room=${meetingId}&participant=${participantId}&name=${encodeURIComponent(participantName)}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        updateParticipantList(data.participants);
+                        
+                        // Check for new participants
+                        const currentParticipants = Object.keys(data.participants);
+                        for (const id of currentParticipants) {
+                            if (id !== participantId && !participants.has(id)) {
+                                console.log('New participant joined:', id);
+                                participants.set(id, data.participants[id]);
+                                
+                                if (isHost) {
+                                    // As host, create peer connection for new participant
+                                    await createPeerConnection(id, false);
+                                }
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error polling participants:', error);
+                }
+            }, 2000);
+        }
+        
+        async function createPeerConnection(remoteParticipantId, isInitiator) {
+            try {
+                console.log(`Creating peer connection with ${remoteParticipantId}, initiator: ${isInitiator}`);
+                
+                const peerConnection = new RTCPeerConnection(rtcConfig);
+                peerConnections.set(remoteParticipantId, peerConnection);
+                
+                // Add local stream to peer connection
+                if (localStream) {
+                    localStream.getTracks().forEach(track => {
+                        peerConnection.addTrack(track, localStream);
+                    });
+                }
+                
+                // Handle remote stream
+                peerConnection.ontrack = (event) => {
+                    console.log('Received remote stream from:', remoteParticipantId);
+                    const remoteStream = event.streams[0];
+                    addRemoteVideo(remoteParticipantId, remoteStream);
+                };
+                
+                // Handle ICE candidates
+                peerConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        console.log('Sending ICE candidate to:', remoteParticipantId);
+                        sendIceCandidate(remoteParticipantId, event.candidate);
+                    }
+                };
+                
+                // Handle connection state changes
+                peerConnection.onconnectionstatechange = () => {
+                    console.log(`Connection state with ${remoteParticipantId}:`, peerConnection.connectionState);
+                    if (peerConnection.connectionState === 'connected') {
+                        console.log(`Successfully connected to ${remoteParticipantId}`);
+                    }
+                };
+                
+                if (isInitiator) {
+                    // Create offer
+                    const offer = await peerConnection.createOffer();
+                    await peerConnection.setLocalDescription(offer);
+                    
+                    console.log('Sending offer to:', remoteParticipantId);
+                    await sendOffer(remoteParticipantId, offer);
+                } else {
+                    // Wait for offer
+                    console.log('Waiting for offer from:', remoteParticipantId);
+                    await waitForOffer(remoteParticipantId, peerConnection);
+                }
+                
+            } catch (error) {
+                console.error('Error creating peer connection:', error);
+            }
+        }
+        
+        async function sendOffer(remoteParticipantId, offer) {
+            try {
+                const response = await fetch('webrtc-signaling.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `action=offer&room=${meetingId}&from=${participantId}&to=${remoteParticipantId}&offer=${encodeURIComponent(JSON.stringify(offer))}`
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    console.log('Offer sent successfully');
+                }
+            } catch (error) {
+                console.error('Error sending offer:', error);
+            }
+        }
+        
+        async function waitForOffer(remoteParticipantId, peerConnection) {
+            // Poll for offer
+            const checkOffer = async () => {
+                try {
+                    const response = await fetch(`webrtc-signaling.php?action=offer&room=${meetingId}&from=${remoteParticipantId}&to=${participantId}`);
+                    const data = await response.json();
+                    
+                    if (data.success && data.offer) {
+                        console.log('Received offer from:', remoteParticipantId);
+                        const offer = JSON.parse(data.offer);
+                        
+                        await peerConnection.setRemoteDescription(offer);
+                        const answer = await peerConnection.createAnswer();
+                        await peerConnection.setLocalDescription(answer);
+                        
+                        console.log('Sending answer to:', remoteParticipantId);
+                        await sendAnswer(remoteParticipantId, answer);
+                        
+                        // Start polling for ICE candidates
+                        pollForIceCandidates(remoteParticipantId, peerConnection);
+                    } else {
+                        setTimeout(checkOffer, 1000);
+                    }
+                } catch (error) {
+                    console.error('Error waiting for offer:', error);
+                    setTimeout(checkOffer, 1000);
+                }
+            };
+            
+            checkOffer();
+        }
+        
+        async function sendAnswer(remoteParticipantId, answer) {
+            try {
+                const response = await fetch('webrtc-signaling.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `action=answer&room=${meetingId}&from=${participantId}&to=${remoteParticipantId}&answer=${encodeURIComponent(JSON.stringify(answer))}`
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    console.log('Answer sent successfully');
+                }
+            } catch (error) {
+                console.error('Error sending answer:', error);
+            }
+        }
+        
+        async function sendIceCandidate(remoteParticipantId, candidate) {
+            try {
+                const response = await fetch('webrtc-signaling.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `action=ice-candidate&room=${meetingId}&from=${participantId}&to=${remoteParticipantId}&candidate=${encodeURIComponent(JSON.stringify(candidate))}`
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    console.log('ICE candidate sent successfully');
+                }
+            } catch (error) {
+                console.error('Error sending ICE candidate:', error);
+            }
+        }
+        
+        async function pollForIceCandidates(remoteParticipantId, peerConnection) {
+            const checkCandidates = async () => {
+                try {
+                    const response = await fetch(`webrtc-signaling.php?action=ice-candidate&room=${meetingId}&from=${remoteParticipantId}&to=${participantId}`);
+                    const data = await response.json();
+                    
+                    if (data.success && data.candidates) {
+                        for (const candidateData of data.candidates) {
+                            const candidate = JSON.parse(candidateData.candidate);
+                            await peerConnection.addIceCandidate(candidate);
+                            console.log('Added ICE candidate from:', remoteParticipantId);
+                        }
+                    }
+                    
+                    setTimeout(checkCandidates, 1000);
+                } catch (error) {
+                    console.error('Error polling ICE candidates:', error);
+                    setTimeout(checkCandidates, 1000);
+                }
+            };
+            
+            checkCandidates();
+        }
+        
+        function updateParticipantList(participantList) {
+            const currentCount = Object.keys(participantList).length;
+            document.getElementById('participant-count').textContent = currentCount;
+            
+            // Check for participants who left
+            for (const [id, participant] of participants.entries()) {
+                if (!participantList[id]) {
+                    console.log('Participant left:', participant.name);
+                    participants.delete(id);
+                    removeParticipantVideo(id);
+                    
+                    // Close peer connection
+                    const peerConnection = peerConnections.get(id);
+                    if (peerConnection) {
+                        peerConnection.close();
+                        peerConnections.delete(id);
+                    }
+                }
+            }
+        }
+        
+        function addLocalVideo() {
+            const videoGrid = document.getElementById('video-grid');
+            const videoItem = document.createElement('div');
+            videoItem.className = 'video-item';
+            videoItem.id = 'local-video';
+            
+            const video = document.createElement('video');
+            video.autoplay = true;
+            video.playsInline = true;
+            video.muted = true;
+            video.srcObject = localStream;
+            
+            const label = document.createElement('div');
+            label.className = 'video-label';
+            label.textContent = 'You (<?php echo $user['full_name']; ?>)';
+            
+            videoItem.appendChild(video);
+            videoItem.appendChild(label);
+            videoGrid.appendChild(videoItem);
+        }
+        
+        function addRemoteVideo(participantId, remoteStream) {
+            const videoGrid = document.getElementById('video-grid');
+            const videoItem = document.createElement('div');
+            videoItem.className = 'video-item';
+            videoItem.id = `participant-${participantId}`;
+            
+            const video = document.createElement('video');
+            video.autoplay = true;
+            video.playsInline = true;
+            video.muted = true;
+            video.srcObject = remoteStream;
+            
+            const label = document.createElement('div');
+            label.className = 'video-label';
+            label.textContent = participants.get(participantId)?.name || 'Participant';
+            
+            videoItem.appendChild(video);
+            videoItem.appendChild(label);
+            videoGrid.appendChild(videoItem);
+        }
+        
+        function removeParticipantVideo(participantId) {
+            const videoItem = document.getElementById(`participant-${participantId}`);
+            if (videoItem) {
+                videoItem.remove();
+            }
+        }
+        
+        function toggleMic() {
+            if (localStream) {
+                const audioTracks = localStream.getAudioTracks();
+                audioTracks.forEach(track => {
+                    track.enabled = !track.enabled;
+                });
+                
+                isMicOn = !isMicOn;
+                const micBtn = document.getElementById('mic-btn');
+                micBtn.classList.toggle('muted', !isMicOn);
+                micBtn.innerHTML = isMicOn ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
+            }
+        }
+        
+        function toggleVideo() {
+            if (localStream) {
+                const videoTracks = localStream.getVideoTracks();
+                videoTracks.forEach(track => {
+                    track.enabled = !track.enabled;
+                });
+                
+                isVideoOn = !isVideoOn;
+                const videoBtn = document.getElementById('video-btn');
+                videoBtn.classList.toggle('muted', !isVideoOn);
+                videoBtn.innerHTML = isVideoOn ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
+            }
+        }
+        
+        async function toggleScreenShare() {
+            try {
+                if (!isScreenSharing) {
+                    // Start screen sharing
+                    const screenStream = await navigator.mediaDevices.getDisplayMedia({
+                        video: true,
+                        audio: true
+                    });
+                    
+                    // Replace video track
+                    const videoTracks = localStream.getVideoTracks();
+                    const screenTracks = screenStream.getVideoTracks();
+                    
+                    if (videoTracks.length > 0 && screenTracks.length > 0) {
+                        localStream.removeTrack(videoTracks[0]);
+                        localStream.addTrack(screenTracks[0]);
+                        
+                        // Update video element
+                        const video = document.querySelector('#local-video video');
+                        if (video) {
+                            video.srcObject = localStream;
+                        }
+                        
+                        // Update all peer connections
+                        for (const [id, peerConnection] of peerConnections.entries()) {
+                            const sender = peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+                            if (sender) {
+                                sender.replaceTrack(screenTracks[0]);
+                            }
+                        }
+                    }
+                    
+                    isScreenSharing = true;
+                    const screenBtn = document.getElementById('screen-btn');
+                    screenBtn.classList.add('active');
+                    screenBtn.innerHTML = '<i class="fas fa-stop"></i>';
+                    
+                    // Handle screen share end
+                    screenTracks[0].onended = () => {
+                        stopScreenShare();
+                    };
+                    
+                } else {
+                    stopScreenShare();
+                }
+            } catch (error) {
+                console.error('Error toggling screen share:', error);
+                showError('Failed to start screen sharing: ' + error.message);
+            }
+        }
+        
+        function stopScreenShare() {
+            // This is a simplified version - in a real implementation,
+            // you'd need to properly handle track replacement
+            isScreenSharing = false;
+            const screenBtn = document.getElementById('screen-btn');
+            screenBtn.classList.remove('active');
+            screenBtn.innerHTML = '<i class="fas fa-desktop"></i>';
+        }
+        
+        function toggleChat() {
+            // Chat functionality can be added here
+            alert('Chat feature coming soon!');
+        }
+        
+        function copyInviteLink() {
+            const inviteLink = document.getElementById('invite-link').textContent;
+            navigator.clipboard.writeText(inviteLink).then(() => {
+                showSuccess('Invite link copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy invite link:', err);
+                showError('Failed to copy invite link');
+            });
+        }
+        
+        async function hangup() {
+            // Leave the meeting
+            try {
+                await fetch(`webrtc-signaling.php?action=leave&room=${meetingId}&participant=${participantId}`);
+            } catch (error) {
+                console.error('Error leaving meeting:', error);
+            }
+            
+            // Close all peer connections
+            for (const [id, peerConnection] of peerConnections.entries()) {
+                peerConnection.close();
+            }
+            peerConnections.clear();
+            
+            // Stop polling
+            if (signalingInterval) {
+                clearInterval(signalingInterval);
+            }
+            
+            if (localStream) {
+                localStream.getTracks().forEach(track => {
+                    track.stop();
+                });
+            }
+            window.location.href = 'home.php';
+        }
+        
+        function updateConnectionStatus(status) {
+            document.getElementById('connection-status').textContent = status;
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        function showSuccess(message) {
+            const successEl = document.getElementById('success-message');
+            successEl.textContent = '✅ ' + message;
+            successEl.style.display = 'block';
+            setTimeout(() => {
+                successEl.style.display = 'none';
+            }, 3000);
+        }
+        
+        function showError(message) {
+            const errorEl = document.createElement('div');
+            errorEl.className = 'error';
+            errorEl.innerHTML = `
+                <h3 style="font-size: 24px; margin-bottom: 20px;">❌ Error</h3>
+                <p style="font-size: 16px; margin-bottom: 30px;">${message}</p>
+                <button onclick="window.location.href='home.php'" style="background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; padding: 15px 30px; border-radius: 25px; cursor: pointer; font-size: 16px; font-weight: 600;">
+                    Go Back
+                </button>
+            `;
+            document.body.appendChild(errorEl);
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('load', initMeeting);
+        
+        // Handle page unload
+        window.addEventListener('beforeunload', function() {
+            if (localStream) {
+                localStream.getTracks().forEach(track => {
+                    track.stop();
+                });
+            }
+        });
+    </script>
+</body>
+</html>
