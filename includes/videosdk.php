@@ -359,7 +359,7 @@ class VideoSDK {
      */
     public function getFrontendConfig($meetingId, $participantName, $participantId = null) {
         // Use the provided token directly for better compatibility
-        $token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlrZXkiOiIwZmM4ZTFhNS1jMDczLTQwN2MtOWJmNC0xNTM0NDI0MzM0MzIiLCJwZXJtaXNzaW9ucyI6WyJhbGxvd19qb2luIl0sImlhdCI6MTc1ODM0ODI0MSwiZXhwIjoxNzg5ODg0MjQxfQ.TqA0BOWZPwbg4MPr1Ox5HgLX1KXSNTPAU8jSePLmEM4';
+        $token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlrZXkiOiI3MzY0ODk5My1iZWZkLTQwYzMtYmE3MS01NmEzZDFlNmUzMDQiLCJwZXJtaXNzaW9ucyI6WyJhbGxvd19qb2luIl0sImlhdCI6MTc1ODM0OTQ1NSwiZXhwIjoxNzg5ODg1NDU1fQ.6iIQeg2rABa0Mp3gfUxqsSxd6J8GBuyQ6tP7msoPuJU';
         
         return [
             'apiKey' => $this->apiKey,

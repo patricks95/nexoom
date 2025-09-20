@@ -2,7 +2,7 @@
 require_once 'includes/videosdk.php';
 
 // Test VideoSDK configuration
-$videoSDK = new VideoSDK('0fc8e1a5-c073-407c-9bf4-153442433432', '208769a959cf753f2e71f1f3552b601763c6d9bf2d991bed1e9e54392159382e');
+$videoSDK = new VideoSDK('73648993-befd-40c3-ba71-56a3d1e6e304', 'f604fad113af89b72ae9df09d9ca9a4bfa83a36b0e28543668ab947f0e40b02e');
 
 $meetingId = 'test_meeting_' . uniqid();
 $participantName = 'Test User';
