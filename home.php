@@ -439,7 +439,7 @@ $user = getCurrentUser();
                         </div>
                         <h3 class="action-title">Start Meeting</h3>
                         <p class="action-description">Create a new video meeting and invite participants. Perfect for presentations and team collaboration.</p>
-                        <a href="webrtc-meeting.php?room=meeting_<?php echo uniqid(); ?>" class="action-btn">
+                        <a href="webrtc-multi.php?room=meeting_<?php echo uniqid(); ?>" class="action-btn">
                             <i class="fas fa-play"></i> Start Now
                         </a>
                     </div>
@@ -450,7 +450,7 @@ $user = getCurrentUser();
                         </div>
                         <h3 class="action-title">Join Meeting</h3>
                         <p class="action-description">Enter a meeting ID to join an existing video conference. Quick and easy access to any meeting.</p>
-                        <a href="webrtc-meeting.php?room=demo_meeting" class="action-btn">
+                        <a href="webrtc-multi.php?room=demo_meeting" class="action-btn">
                             <i class="fas fa-sign-in-alt"></i> Join Demo
                         </a>
                     </div>
@@ -471,7 +471,7 @@ $user = getCurrentUser();
                 
                 <div class="meeting-form">
                     <h3 class="form-title">Join Specific Meeting</h3>
-                    <form method="GET" action="webrtc-meeting.php">
+                    <form method="GET" action="webrtc-multi.php">
                         <div class="form-group">
                             <input type="text" name="room" placeholder="Enter Meeting ID" class="form-input" required>
                             <button type="submit" class="form-btn">
