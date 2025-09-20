@@ -1,7 +1,7 @@
 <?php
-// VideoSDK React Prebuilt UI implementation
+// Minimal VideoSDK implementation without authentication features
 $meetingId = isset($_GET['meetingId']) ? $_GET['meetingId'] : 'meeting_' . uniqid();
-$participantName = isset($_GET['name']) && !empty(trim($_GET['name'])) ? trim($_GET['name']) : 'Participant_' . uniqid();
+$participantName = isset($_GET['name']) && !empty(trim($_GET['name'])) ? trim($_GET['name']) : 'User_' . uniqid();
 
 // Use the provided token directly
 $token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlrZXkiOiI3MzY0ODk5My1iZWZkLTQwYzMtYmE3MS01NmEzZDFlNmUzMDQiLCJwZXJtaXNzaW9ucyI6WyJhbGxvd19qb2luIl0sImlhdCI6MTc1ODM0OTQ1NSwiZXhwIjoxNzg5ODg1NDU1fQ.6iIQeg2rABa0Mp3gfUxqsSxd6J8GBuyQ6tP7msoPuJU';
@@ -121,10 +121,33 @@ $token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlrZXkiOiI3MzY0ODk5My1iZWZkL
             transform: translateY(-3px);
             box-shadow: 0 15px 35px rgba(212, 175, 55, 0.4);
         }
+        
+        .debug-info {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ff00;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            z-index: 10000;
+            max-width: 300px;
+            word-break: break-all;
+        }
     </style>
 </head>
 <body>
     <div class="meeting-container">
+        <!-- Debug Info -->
+        <div class="debug-info" id="debugInfo">
+            <strong>Minimal VideoSDK Test:</strong><br>
+            Meeting ID: <?php echo htmlspecialchars($meetingId); ?><br>
+            Name: <?php echo htmlspecialchars($participantName); ?><br>
+            <a href="index.php" style="color: #00ff00;">Back to Home</a>
+        </div>
+        
         <!-- Loading Screen -->
         <div class="loading-screen" id="loadingScreen">
             <div class="loading-spinner"></div>
@@ -148,11 +171,11 @@ $token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlrZXkiOiI3MzY0ODk5My1iZWZkL
             </div>
         </div>
         
-        <!-- VideoSDK Meeting iframe -->
+        <!-- VideoSDK Meeting iframe - Minimal parameters only -->
         <iframe 
             id="meetingIframe"
             class="meeting-iframe"
-            src="https://videosdk.live/?token=<?php echo $token; ?>&meetingId=<?php echo $meetingId; ?>&name=<?php echo urlencode($participantName); ?>&micEnabled=true&webcamEnabled=true&chatEnabled=true&screenShareEnabled=true&recordingEnabled=false&liveStreamEnabled=false&whiteboardEnabled=false&raiseHandEnabled=false&participantCanToggleSelfWebcam=true&participantCanToggleSelfMic=true&participantCanLeave=true&participantCanEndMeeting=false&joinScreenEnabled=false&joinScreenTitle=Nexoom+Video+Meeting&brandingEnabled=false&brandName=Nexoom&poweredBy=false&redirectOnLeave=index.php&layoutType=GRID&maxResolution=hd&debug=false&authEnabled=false&googleSignInEnabled=false&microsoftSignInEnabled=false&appleSignInEnabled=false"
+            src="https://videosdk.live/?token=<?php echo $token; ?>&meetingId=<?php echo $meetingId; ?>&name=<?php echo urlencode($participantName); ?>&micEnabled=true&webcamEnabled=true&chatEnabled=true&screenShareEnabled=true&recordingEnabled=false&liveStreamEnabled=false&whiteboardEnabled=false&raiseHandEnabled=false&participantCanToggleSelfWebcam=true&participantCanToggleSelfMic=true&participantCanLeave=true&participantCanEndMeeting=false&joinScreenEnabled=false&brandingEnabled=false&brandName=Nexoom&poweredBy=false&redirectOnLeave=index.php&layoutType=GRID&maxResolution=hd&debug=false"
             allow="camera; microphone; display-capture; autoplay"
             allowfullscreen
             sandbox="allow-same-origin allow-scripts allow-camera allow-microphone allow-display-capture allow-forms allow-popups allow-popups-to-escape-sandbox"
@@ -177,11 +200,10 @@ $token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlrZXkiOiI3MzY0ODk5My1iZWZkL
         
         function startMeeting() {
             try {
-                console.log('Starting VideoSDK meeting...');
+                console.log('Starting minimal VideoSDK meeting...');
                 console.log('Meeting ID:', '<?php echo $meetingId; ?>');
                 console.log('Participant Name:', '<?php echo $participantName; ?>');
                 console.log('Token (first 20 chars):', '<?php echo substr($token, 0, 20); ?>...');
-                console.log('Full VideoSDK URL:', '<?php echo "https://videosdk.live/?token=" . $token . "&meetingId=" . $meetingId . "&name=" . urlencode($participantName) . "&micEnabled=true&webcamEnabled=true&chatEnabled=true&screenShareEnabled=true&recordingEnabled=false&liveStreamEnabled=false&whiteboardEnabled=false&raiseHandEnabled=false&participantCanToggleSelfWebcam=true&participantCanToggleSelfMic=true&participantCanLeave=true&participantCanEndMeeting=false&joinScreenEnabled=true&joinScreenTitle=Nexoom+Video+Meeting&brandingEnabled=false&brandName=Nexoom&poweredBy=false&redirectOnLeave=index.php&layoutType=GRID&maxResolution=hd&debug=true"; ?>');
                 
                 // Show loading screen
                 loadingScreen.style.display = 'flex';
@@ -207,7 +229,7 @@ $token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlrZXkiOiI3MzY0ODk5My1iZWZkL
                     if (loadingScreen.style.display !== 'none') {
                         showError('Meeting is taking too long to load. Please try again.');
                     }
-                }, 15000);
+                }, 25000); // Increased timeout to 25 seconds
                 
             } catch (error) {
                 console.error('Error starting meeting:', error);
