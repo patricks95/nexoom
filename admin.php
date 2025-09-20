@@ -396,8 +396,8 @@ if ($user['role'] !== 'admin') {
                 <div class="card-description">
                     Monitor active meetings, view meeting history, and manage meeting settings. End meetings if needed.
                 </div>
-                <a href="#" class="card-btn">
-                    <i class="fas fa-arrow-right"></i> Manage Meetings
+                <a href="videosdk-admin.php" class="card-btn">
+                    <i class="fas fa-arrow-right"></i> VideoSDK Admin
                 </a>
             </div>
             
